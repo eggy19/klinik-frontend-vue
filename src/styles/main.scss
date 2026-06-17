@@ -1,0 +1,56 @@
+// Design system entrypoint. Diurutkan: tokens → themes → base.
+@use 'tokens/colors';
+@use 'tokens/spacing';
+@use 'tokens/radius';
+@use 'tokens/shadows';
+@use 'tokens/typography';
+@use 'themes/light';
+@use 'themes/dark';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-md);
+  font-weight: var(--font-weight-body);
+  line-height: 1.5;
+  background-color: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: var(--font-weight-heading);
+  margin: 0;
+}
+
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+// Fokus terlihat untuk aksesibilitas (docs/06).
+:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}

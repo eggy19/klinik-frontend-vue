@@ -1,0 +1,11 @@
+// Dark theme — diaktifkan via class `.app-dark` pada <html> (lihat stores/theme).
+.app-dark {
+  --bg: #111827;
+  --surface: #1f2937;
+  --surface-hover: #273244;
+  --border: #374151;
+  --text: #f9fafb;
+  --text-muted: #9ca3af;
+
+  color-scheme: dark;
+}

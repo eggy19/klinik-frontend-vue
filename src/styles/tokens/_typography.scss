@@ -1,0 +1,15 @@
+// Typography (docs/02-design-system.md). Font Inter, heading 600 / body 400.
+:root {
+  --font-family: 'Inter', sans-serif;
+
+  --font-xs: 12px;
+  --font-sm: 14px;
+  --font-md: 16px;
+  --font-lg: 18px;
+  --font-xl: 20px;
+  --font-2xl: 24px;
+  --font-3xl: 32px;
+
+  --font-weight-body: 400;
+  --font-weight-heading: 600;
+}

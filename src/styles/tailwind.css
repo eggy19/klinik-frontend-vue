@@ -1,0 +1,16 @@
+/*
+ * Tailwind + PrimeVue lewat CSS layers agar preflight Tailwind tidak
+ * menimpa style komponen PrimeVue. Urutan layer harus sama dengan
+ * konfigurasi PrimeVue `cssLayer` di main.ts.
+ */
+@layer tailwind-base, primevue, tailwind-utilities;
+
+@layer tailwind-base {
+  @tailwind base;
+}
+
+@tailwind components;
+
+@layer tailwind-utilities {
+  @tailwind utilities;
+}

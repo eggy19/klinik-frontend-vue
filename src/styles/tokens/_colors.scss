@@ -1,0 +1,15 @@
+// Brand / status colors (docs/02-design-system.md).
+// Nilai konstan lintas tema; warna surface/teks diatur di themes/.
+:root {
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-contrast: #ffffff;
+
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-info: #06b6d4;
+
+  // Alias semantik yang dipakai komponen
+  --primary-color: var(--color-primary);
+}
