@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import SummaryCard from '../components/SummaryCard.vue'
-import { useInventoryStore } from '@/modules/inventory/stores/inventory.store'
+import { useMedicineStore } from '@/modules/inventory/stores/medicine.store'
 
-const inventory = useInventoryStore()
+const inventory = useMedicineStore()
 
 // Modul Billing belum masuk MVP — transaksi hari ini masih mock.
 const todayTransaction = 24

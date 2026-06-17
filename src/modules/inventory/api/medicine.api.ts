@@ -72,7 +72,7 @@ let medicines: Medicine[] = [
   },
 ]
 
-export const inventoryApi = {
+export const medicineApi = {
   getMedicines(): Promise<Medicine[]> {
     return mockDelay([...medicines])
   },

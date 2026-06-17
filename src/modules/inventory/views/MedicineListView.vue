@@ -7,7 +7,7 @@ import BaseButton from '@/components/base/BaseButton.vue'
 import BaseDialog from '@/components/base/BaseDialog.vue'
 import BaseDataTable, { type DataTableColumn } from '@/components/base/BaseDataTable.vue'
 import MedicineForm from '../components/MedicineForm.vue'
-import { useInventoryStore } from '../stores/inventory.store'
+import { useMedicineStore } from '../stores/medicine.store'
 import {
   emptyMedicine,
   getStockStatus,
@@ -17,7 +17,7 @@ import {
 import { formatCurrency, formatDate } from '@/utils/format'
 import { useToastFeedback } from '@/composables/useToastFeedback'
 
-const store = useInventoryStore()
+const store = useMedicineStore()
 const confirm = useConfirm()
 const toast = useToastFeedback()
 
@@ -116,9 +116,9 @@ onMounted(store.fetchAll)
 </script>
 
 <template>
-  <div class="inventory">
-    <div class="inventory__head">
-      <h1 class="inventory__title">Inventory</h1>
+  <div class="medicine">
+    <div class="medicine__head">
+      <h1 class="medicine__title">Obat</h1>
     </div>
 
     <BaseCard>
@@ -127,7 +127,7 @@ onMounted(store.fetchAll)
         :columns="columns"
         :loading="store.loading"
         search-placeholder="Cari obat..."
-        export-filename="inventory"
+        export-filename="obat"
         empty-title="Belum ada data obat"
         empty-description="Tambahkan obat pertama untuk mulai mengelola stok."
       >
@@ -137,10 +137,10 @@ onMounted(store.fetchAll)
 
         <!-- Sel kustom -->
         <template #cell-stock="{ data }">
-          <span class="inventory__stock">
+          <span class="medicine__stock">
             <span
-              class="inventory__stock-value"
-              :class="{ 'inventory__stock-value--alert': !!stockTag(data) }"
+              class="medicine__stock-value"
+              :class="{ 'medicine__stock-value--alert': !!stockTag(data) }"
               :style="{ color: stockColor(data) }"
             >
               {{ data.stock }}
@@ -192,24 +192,24 @@ onMounted(store.fetchAll)
 </template>
 
 <style scoped>
-.inventory {
+.medicine {
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
 }
 
-.inventory__title {
+.medicine__title {
   font-size: var(--font-2xl);
   color: var(--text);
 }
 
-.inventory__stock {
+.medicine__stock {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
 }
 
-.inventory__stock-value--alert {
+.medicine__stock-value--alert {
   font-weight: var(--font-weight-heading);
 }
 </style>
