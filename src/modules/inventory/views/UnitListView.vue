@@ -69,8 +69,15 @@ function confirmDelete(item: Unit) {
       try {
         await store.remove(item.id)
         toast.success('Data berhasil dihapus.')
-      } catch {
-        toast.error('Gagal menghapus data.')
+      } catch (err: unknown) {
+        const isInUse =
+          err instanceof Error &&
+          (err.message.includes('409') || err.message.toLowerCase().includes('digunakan'))
+        toast.error(
+          isInUse
+            ? `"${item.name}" tidak dapat dihapus karena sedang digunakan oleh data obat.`
+            : 'Gagal menghapus data.',
+        )
       }
     },
   })

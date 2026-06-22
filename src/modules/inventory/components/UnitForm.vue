@@ -24,7 +24,13 @@ const errors = ref<ErrorMap>({})
 
 function validate(): boolean {
   const e: ErrorMap = {}
-  if (!form.code.trim()) e.code = 'Singkatan wajib diisi.'
+  if (!form.code.trim()) {
+    e.code = 'Singkatan wajib diisi.'
+  } else if (form.code.length > 10) {
+    e.code = 'Singkatan maksimal 10 karakter.'
+  } else if (!/^[a-zA-Z0-9]+$/.test(form.code)) {
+    e.code = 'Singkatan hanya boleh huruf dan angka.'
+  }
   if (!form.name.trim()) e.name = 'Nama satuan wajib diisi.'
   errors.value = e
   return Object.keys(e).length === 0
@@ -39,7 +45,7 @@ function onSubmit() {
 <template>
   <form class="unit-form" @submit.prevent="onSubmit">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <BaseInput v-model="form.code" label="Singkatan" required :error="errors.code" />
+      <BaseInput v-model="form.code" label="Singkatan" required :error="errors.code" placeholder="mis. TAB" />
       <BaseInput v-model="form.name" label="Nama Satuan" required :error="errors.name" />
       <div class="md:col-span-2">
         <BaseInput v-model="form.description" label="Deskripsi" />

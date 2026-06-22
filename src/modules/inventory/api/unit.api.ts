@@ -1,36 +1,53 @@
-import { mockDelay } from '@/api/client'
-import { generateId } from '@/utils/id'
+import { apiClient } from '@/api/client'
 import type { Unit, UnitInput } from '../types/unit'
 
-// MOCK DATA LOKAL — lihat catatan di medicine.api.ts.
-let units: Unit[] = [
-  { id: 'u-001', code: 'tab', name: 'Tablet', description: 'Sediaan padat per butir.' },
-  { id: 'u-002', code: 'kap', name: 'Kapsul', description: 'Sediaan padat berbentuk kapsul.' },
-  { id: 'u-003', code: 'btl', name: 'Botol', description: 'Sediaan cair per botol.' },
-  { id: 'u-004', code: 'box', name: 'Box', description: 'Kemasan kotak.' },
-  { id: 'u-005', code: 'strip', name: 'Strip', description: 'Kemasan strip lembaran.' },
-  { id: 'u-006', code: 'amp', name: 'Ampul', description: 'Sediaan injeksi per ampul.' },
-]
+interface ApiResponse<T> {
+  success: boolean
+  message: string
+  data: T
+}
+
+interface ApiUnit {
+  id: string
+  unitCode: string
+  unitName: string
+  description: string
+}
+
+function fromApi(raw: ApiUnit): Unit {
+  return {
+    id: raw.id,
+    code: raw.unitCode,
+    name: raw.unitName,
+    description: raw.description,
+  }
+}
+
+function toApi(input: UnitInput): Omit<ApiUnit, 'id'> {
+  return {
+    unitCode: input.code,
+    unitName: input.name,
+    description: input.description,
+  }
+}
 
 export const unitApi = {
-  getUnits(): Promise<Unit[]> {
-    return mockDelay([...units])
+  async getUnits(): Promise<Unit[]> {
+    const res = await apiClient.get<ApiResponse<ApiUnit[]>>('/master/units')
+    return res.data.data.map(fromApi)
   },
 
-  createUnit(input: UnitInput): Promise<Unit> {
-    const created: Unit = { ...input, id: generateId('u') }
-    units = [created, ...units]
-    return mockDelay(created)
+  async createUnit(input: UnitInput): Promise<Unit> {
+    const res = await apiClient.post<ApiResponse<ApiUnit>>('/master/units', toApi(input))
+    return fromApi(res.data.data)
   },
 
-  updateUnit(id: string, input: UnitInput): Promise<Unit> {
-    const updated: Unit = { ...input, id }
-    units = units.map((u) => (u.id === id ? updated : u))
-    return mockDelay(updated)
+  async updateUnit(id: string, input: UnitInput): Promise<Unit> {
+    const res = await apiClient.put<ApiResponse<ApiUnit>>(`/master/units/${id}`, toApi(input))
+    return fromApi(res.data.data)
   },
 
-  deleteUnit(id: string): Promise<void> {
-    units = units.filter((u) => u.id !== id)
-    return mockDelay(undefined)
+  async deleteUnit(id: string): Promise<void> {
+    await apiClient.delete(`/master/units/${id}`)
   },
 }
