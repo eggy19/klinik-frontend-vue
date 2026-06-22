@@ -1,11 +1,6 @@
 import { apiClient } from '@/api/client'
+import type { ApiResponse } from '@/api/types'
 import type { Unit, UnitInput } from '../types/unit'
-
-interface ApiResponse<T> {
-  success: boolean
-  message: string
-  data: T
-}
 
 interface ApiUnit {
   id: string

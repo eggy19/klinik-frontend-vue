@@ -1,44 +1,51 @@
-import { mockDelay } from '@/api/client'
-import { generateId } from '@/utils/id'
+import { apiClient } from '@/api/client'
+import type { ApiResponse } from '@/api/types'
 import type { Category, CategoryInput } from '../types/category'
 
-// MOCK DATA LOKAL — lihat catatan di medicine.api.ts.
-let categories: Category[] = [
-  { id: 'c-001', code: 'KAT-01', name: 'Obat Bebas', description: 'Dapat dibeli tanpa resep dokter.' },
-  {
-    id: 'c-002',
-    code: 'KAT-02',
-    name: 'Obat Bebas Terbatas',
-    description: 'Dijual bebas dengan batasan jumlah dan peringatan.',
-  },
-  {
-    id: 'c-003',
-    code: 'KAT-03',
-    name: 'Obat Keras',
-    description: 'Hanya dapat dibeli dengan resep dokter.',
-  },
-  { id: 'c-004', code: 'KAT-04', name: 'Alkes', description: 'Alat kesehatan dan penunjang medis.' },
-]
+interface ApiCategory {
+  id: string
+  itemTypeId: string
+  categoryCode: string
+  categoryName: string
+  description: string
+}
+
+function fromApi(raw: ApiCategory): Category {
+  return {
+    id: raw.id,
+    itemTypeId: raw.itemTypeId,
+    code: raw.categoryCode,
+    name: raw.categoryName,
+    description: raw.description,
+  }
+}
+
+function toApi(input: CategoryInput): Omit<ApiCategory, 'id'> {
+  return {
+    itemTypeId: input.itemTypeId,
+    categoryCode: input.code,
+    categoryName: input.name,
+    description: input.description,
+  }
+}
 
 export const categoryApi = {
-  getCategories(): Promise<Category[]> {
-    return mockDelay([...categories])
+  async getCategories(): Promise<Category[]> {
+    const res = await apiClient.get<ApiResponse<ApiCategory[]>>('/master/categories')
+    return res.data.data.map(fromApi)
   },
 
-  createCategory(input: CategoryInput): Promise<Category> {
-    const created: Category = { ...input, id: generateId('c') }
-    categories = [created, ...categories]
-    return mockDelay(created)
+  async createCategory(input: CategoryInput): Promise<Category> {
+    const res = await apiClient.post<ApiResponse<ApiCategory>>('/master/categories', toApi(input))
+    return fromApi(res.data.data)
   },
 
-  updateCategory(id: string, input: CategoryInput): Promise<Category> {
-    const updated: Category = { ...input, id }
-    categories = categories.map((c) => (c.id === id ? updated : c))
-    return mockDelay(updated)
+  async updateCategory(id: string, input: CategoryInput): Promise<Category> {
+    const res = await apiClient.put<ApiResponse<ApiCategory>>(`/master/categories/${id}`, toApi(input))
+    return fromApi(res.data.data)
   },
 
-  deleteCategory(id: string): Promise<void> {
-    categories = categories.filter((c) => c.id !== id)
-    return mockDelay(undefined)
+  async deleteCategory(id: string): Promise<void> {
+    await apiClient.delete(`/master/categories/${id}`)
   },
 }

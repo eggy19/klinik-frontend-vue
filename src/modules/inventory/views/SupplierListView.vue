@@ -5,49 +5,44 @@ import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseDialog from '@/components/base/BaseDialog.vue'
 import BaseDataTable, { type DataTableColumn } from '@/components/base/BaseDataTable.vue'
-import CategoryForm from '../components/CategoryForm.vue'
-import { useCategoryStore } from '../stores/category.store'
-import { useItemTypeStore } from '../stores/item-type.store'
-import { emptyCategory, type Category, type CategoryInput } from '../types/category'
+import SupplierForm from '../components/SupplierForm.vue'
+import { useSupplierStore } from '../stores/supplier.store'
+import { emptySupplier, type Supplier, type SupplierInput } from '../types/supplier'
 import { useToastFeedback } from '@/composables/useToastFeedback'
 
-const store = useCategoryStore()
-const itemTypeStore = useItemTypeStore()
+const store = useSupplierStore()
 const confirm = useConfirm()
 const toast = useToastFeedback()
 
 const columns: DataTableColumn[] = [
   { field: 'code', header: 'Kode' },
-  { field: 'name', header: 'Nama Kategori' },
-  { field: 'itemTypeId', header: 'Tipe Item' },
-  { field: 'description', header: 'Deskripsi' },
+  { field: 'name', header: 'Nama Supplier' },
+  { field: 'phone', header: 'Telepon' },
+  { field: 'email', header: 'Email' },
+  { field: 'address', header: 'Alamat' },
 ]
 
 const dialogVisible = ref(false)
 const submitting = ref(false)
 const editingId = ref<string | null>(null)
-const formInitial = ref<CategoryInput>(emptyCategory())
+const formInitial = ref<SupplierInput>(emptySupplier())
 
-const dialogHeader = computed(() => (editingId.value ? 'Edit Kategori' : 'Tambah Kategori'))
-
-function itemTypeName(id: string): string {
-  return itemTypeStore.items.find((t) => t.id === id)?.name ?? id
-}
+const dialogHeader = computed(() => (editingId.value ? 'Edit Supplier' : 'Tambah Supplier'))
 
 function openCreate() {
   editingId.value = null
-  formInitial.value = emptyCategory()
+  formInitial.value = emptySupplier()
   dialogVisible.value = true
 }
 
-function openEdit(item: Category) {
+function openEdit(item: Supplier) {
   editingId.value = item.id
   const { id: _id, ...rest } = item
   formInitial.value = { ...rest }
   dialogVisible.value = true
 }
 
-async function onSubmit(input: CategoryInput) {
+async function onSubmit(input: SupplierInput) {
   submitting.value = true
   try {
     if (editingId.value) {
@@ -64,9 +59,9 @@ async function onSubmit(input: CategoryInput) {
   }
 }
 
-function confirmDelete(item: Category) {
+function confirmDelete(item: Supplier) {
   confirm.require({
-    header: 'Hapus Kategori',
+    header: 'Hapus Supplier',
     message: `Hapus "${item.name}"? Tindakan ini tidak dapat dibatalkan.`,
     icon: 'pi pi-exclamation-triangle',
     rejectLabel: 'Batal',
@@ -82,7 +77,7 @@ function confirmDelete(item: Category) {
           (err.message.includes('409') || err.message.toLowerCase().includes('digunakan'))
         toast.error(
           isInUse
-            ? `"${item.name}" tidak dapat dihapus karena sedang digunakan oleh data obat.`
+            ? `"${item.name}" tidak dapat dihapus karena sedang digunakan oleh transaksi purchasing.`
             : 'Gagal menghapus data.',
         )
       }
@@ -90,16 +85,13 @@ function confirmDelete(item: Category) {
   })
 }
 
-onMounted(() => {
-  store.fetchAll()
-  itemTypeStore.fetchAll()
-})
+onMounted(store.fetchAll)
 </script>
 
 <template>
-  <div class="category">
-    <div class="category__head">
-      <h1 class="category__title">Kategori</h1>
+  <div class="supplier">
+    <div class="supplier__head">
+      <h1 class="supplier__title">Supplier</h1>
     </div>
 
     <BaseCard>
@@ -107,17 +99,13 @@ onMounted(() => {
         :value="store.items"
         :columns="columns"
         :loading="store.loading"
-        search-placeholder="Cari kategori..."
-        export-filename="kategori"
-        empty-title="Belum ada data kategori"
-        empty-description="Tambahkan kategori pertama untuk mengelompokkan obat."
+        search-placeholder="Cari supplier..."
+        export-filename="supplier"
+        empty-title="Belum ada data supplier"
+        empty-description="Tambahkan supplier pertama, mis. Kimia Farma."
       >
         <template #actions>
-          <BaseButton label="Tambah Kategori" icon="pi pi-plus" @click="openCreate" />
-        </template>
-
-        <template #cell-itemTypeId="{ value }">
-          {{ itemTypeName(value) }}
+          <BaseButton label="Tambah Supplier" icon="pi pi-plus" @click="openCreate" />
         </template>
 
         <template #row-actions="{ data }">
@@ -139,16 +127,15 @@ onMounted(() => {
         </template>
 
         <template #empty-action>
-          <BaseButton label="Tambah Kategori" icon="pi pi-plus" @click="openCreate" />
+          <BaseButton label="Tambah Supplier" icon="pi pi-plus" @click="openCreate" />
         </template>
       </BaseDataTable>
     </BaseCard>
 
     <BaseDialog v-model:visible="dialogVisible" :header="dialogHeader">
-      <CategoryForm
+      <SupplierForm
         :initial="formInitial"
         :submitting="submitting"
-        :item-types="itemTypeStore.items"
         @submit="onSubmit"
         @cancel="dialogVisible = false"
       />
@@ -157,13 +144,13 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.category {
+.supplier {
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
 }
 
-.category__title {
+.supplier__title {
   font-size: var(--font-2xl);
   color: var(--text);
 }

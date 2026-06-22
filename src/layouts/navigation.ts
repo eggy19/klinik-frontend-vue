@@ -12,9 +12,11 @@ export const navItems: NavItem[] = [
     label: 'Inventory',
     icon: 'pi pi-box',
     children: [
-      { label: 'Obat', icon: 'pi pi-tablet', to: '/inventory/obat' },
+      { label: 'Item', icon: 'pi pi-box', to: '/inventory/obat' },
       { label: 'Kategori', icon: 'pi pi-tags', to: '/inventory/kategori' },
       { label: 'Satuan', icon: 'pi pi-th-large', to: '/inventory/satuan' },
+      { label: 'Tipe Item', icon: 'pi pi-list', to: '/inventory/tipe-item' },
+      { label: 'Supplier', icon: 'pi pi-truck', to: '/inventory/supplier' },
     ],
   },
 ]
