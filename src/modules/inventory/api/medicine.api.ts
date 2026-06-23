@@ -1,6 +1,9 @@
-import { mockDelay } from '@/api/client'
-import { generateId } from '@/utils/id'
+// import { mockDelay } from '@/api/client'
+// import { generateId } from '@/utils/id'
+import { apiClient } from '@/api/client'
 import type { Medicine, MedicineInput } from '../types/medicine'
+
+
 
 /**
  * MOCK DATA LOKAL.
@@ -8,7 +11,7 @@ import type { Medicine, MedicineInput } from '../types/medicine'
  * Layer ini mengikuti docs/05 (seluruh komunikasi backend lewat api/).
  * Saat backend siap, ganti isi tiap fungsi agar memakai `apiClient`
  * (axios) dari '@/api/client' dan set VITE_API_BASE_URL.
- */
+
 let medicines: Medicine[] = [
   {
     id: 'm-001',
@@ -72,29 +75,29 @@ let medicines: Medicine[] = [
   },
 ]
 
+ */
+// let medicines: Medicine[];
+
 export const medicineApi = {
   getMedicines(): Promise<Medicine[]> {
-    return mockDelay([...medicines])
+    return apiClient.get<Medicine[]>('/medicines').then((res) => res.data)
   },
 
-  getMedicine(id: string): Promise<Medicine | undefined> {
-    return mockDelay(medicines.find((m) => m.id === id))
+  getMedicine(id: string): Promise<Medicine> {
+    return apiClient.get<Medicine>(`/medicines/${id}`).then((res) => res.data)
   },
 
   createMedicine(input: MedicineInput): Promise<Medicine> {
-    const created: Medicine = { ...input, id: generateId('m') }
-    medicines = [created, ...medicines]
-    return mockDelay(created)
+    return apiClient.post<Medicine>('/medicines', input).then((res) => res.data)
   },
 
   updateMedicine(id: string, input: MedicineInput): Promise<Medicine> {
-    const updated: Medicine = { ...input, id }
-    medicines = medicines.map((m) => (m.id === id ? updated : m))
-    return mockDelay(updated)
+    return apiClient.put<Medicine>(`/medicines/${id}`, input).then((res) => res.data)
   },
 
   deleteMedicine(id: string): Promise<void> {
-    medicines = medicines.filter((m) => m.id !== id)
-    return mockDelay(undefined)
+    return apiClient.delete(`/medicines/${id}`).then(() => undefined)
   },
 }
+
+

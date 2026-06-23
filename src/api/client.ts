@@ -11,12 +11,25 @@ export const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => Promise.reject(error),
-)
-
 /** Helper simulasi latency untuk mock API lokal. */
 export function mockDelay<T>(data: T, ms = 400): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(data), ms))
 }
+
+// Menambahkan Request Interceptor
+apiClient.interceptors.request.use(
+  (config) => {
+    // Anda bisa mendapatkan ID ini dari Store atau LocalStorage
+    const tenantId = localStorage.getItem('tenant_id') || 'aaaaaaaa-0000-0000-0000-000000000001';
+    const branchId = localStorage.getItem('branch_id') || 'bbbbbbbb-0000-0000-0000-000000000001';
+
+    // Menambahkan header ke konfigurasi request
+    config.headers['X-Tenant-Id'] = tenantId;
+    config.headers['X-Branch-Id'] = branchId;
+
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
