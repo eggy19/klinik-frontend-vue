@@ -8,7 +8,11 @@ import axios from 'axios'
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api',
   timeout: 15000,
-  headers: { 'Content-Type': 'application/json' },
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Tenant-Id': 'aaaaaaaa-0000-0000-0000-000000000001',
+    'X-Branch-Id': 'bbbbbbbb-0000-0000-0000-000000000001',
+  },
 })
 
 /** Helper simulasi latency untuk mock API lokal. */

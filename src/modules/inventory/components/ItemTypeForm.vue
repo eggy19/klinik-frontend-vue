@@ -2,36 +2,36 @@
 import { reactive, ref } from 'vue'
 import BaseInput from '@/components/base/BaseInput.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
-import type { UnitInput } from '../types/unit'
+import type { ItemTypeInput } from '../types/item-type'
 
 const props = withDefaults(
   defineProps<{
-    initial: UnitInput
+    initial: ItemTypeInput
     submitting?: boolean
   }>(),
   { submitting: false },
 )
 
 const emit = defineEmits<{
-  submit: [value: UnitInput]
+  submit: [value: ItemTypeInput]
   cancel: []
 }>()
 
-const form = reactive<UnitInput>({ ...props.initial })
+const form = reactive<ItemTypeInput>({ ...props.initial })
 
-type ErrorMap = Partial<Record<keyof UnitInput, string>>
+type ErrorMap = Partial<Record<keyof ItemTypeInput, string>>
 const errors = ref<ErrorMap>({})
 
 function validate(): boolean {
   const e: ErrorMap = {}
   if (!form.code.trim()) {
-    e.code = 'Singkatan wajib diisi.'
+    e.code = 'Kode wajib diisi.'
   } else if (form.code.length > 10) {
-    e.code = 'Singkatan maksimal 10 karakter.'
+    e.code = 'Kode maksimal 10 karakter.'
   } else if (!/^[a-zA-Z0-9]+$/.test(form.code)) {
-    e.code = 'Singkatan hanya boleh huruf dan angka.'
+    e.code = 'Kode hanya boleh huruf dan angka.'
   }
-  if (!form.name.trim()) e.name = 'Nama satuan wajib diisi.'
+  if (!form.name.trim()) e.name = 'Nama tipe wajib diisi.'
   errors.value = e
   return Object.keys(e).length === 0
 }
@@ -43,16 +43,16 @@ function onSubmit() {
 </script>
 
 <template>
-  <form class="unit-form" @submit.prevent="onSubmit">
+  <form class="item-type-form" @submit.prevent="onSubmit">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <BaseInput v-model="form.code" label="Singkatan" required :error="errors.code" placeholder="mis. TAB" />
-      <BaseInput v-model="form.name" label="Nama Satuan" required :error="errors.name" />
+      <BaseInput v-model="form.code" label="Kode" required :error="errors.code" placeholder="mis. MED" />
+      <BaseInput v-model="form.name" label="Nama Tipe" required :error="errors.name" />
       <div class="md:col-span-2">
         <BaseInput v-model="form.description" label="Deskripsi" />
       </div>
     </div>
 
-    <div class="unit-form__actions">
+    <div class="item-type-form__actions">
       <BaseButton label="Batal" variant="ghost" type="button" @click="emit('cancel')" />
       <BaseButton label="Simpan" type="submit" :loading="submitting" />
     </div>
@@ -60,7 +60,7 @@ function onSubmit() {
 </template>
 
 <style scoped>
-.unit-form__actions {
+.item-type-form__actions {
   display: flex;
   justify-content: flex-end;
   gap: var(--space-2);

@@ -7,16 +7,19 @@ import BaseDialog from '@/components/base/BaseDialog.vue'
 import BaseDataTable, { type DataTableColumn } from '@/components/base/BaseDataTable.vue'
 import CategoryForm from '../components/CategoryForm.vue'
 import { useCategoryStore } from '../stores/category.store'
+import { useItemTypeStore } from '../stores/item-type.store'
 import { emptyCategory, type Category, type CategoryInput } from '../types/category'
 import { useToastFeedback } from '@/composables/useToastFeedback'
 
 const store = useCategoryStore()
+const itemTypeStore = useItemTypeStore()
 const confirm = useConfirm()
 const toast = useToastFeedback()
 
 const columns: DataTableColumn[] = [
   { field: 'code', header: 'Kode' },
   { field: 'name', header: 'Nama Kategori' },
+  { field: 'itemTypeId', header: 'Tipe Item' },
   { field: 'description', header: 'Deskripsi' },
 ]
 
@@ -26,6 +29,10 @@ const editingId = ref<string | null>(null)
 const formInitial = ref<CategoryInput>(emptyCategory())
 
 const dialogHeader = computed(() => (editingId.value ? 'Edit Kategori' : 'Tambah Kategori'))
+
+function itemTypeName(id: string): string {
+  return itemTypeStore.items.find((t) => t.id === id)?.name ?? id
+}
 
 function openCreate() {
   editingId.value = null
@@ -69,14 +76,24 @@ function confirmDelete(item: Category) {
       try {
         await store.remove(item.id)
         toast.success('Data berhasil dihapus.')
-      } catch {
-        toast.error('Gagal menghapus data.')
+      } catch (err: unknown) {
+        const isInUse =
+          err instanceof Error &&
+          (err.message.includes('409') || err.message.toLowerCase().includes('digunakan'))
+        toast.error(
+          isInUse
+            ? `"${item.name}" tidak dapat dihapus karena sedang digunakan oleh data obat.`
+            : 'Gagal menghapus data.',
+        )
       }
     },
   })
 }
 
-onMounted(store.fetchAll)
+onMounted(() => {
+  store.fetchAll()
+  itemTypeStore.fetchAll()
+})
 </script>
 
 <template>
@@ -97,6 +114,10 @@ onMounted(store.fetchAll)
       >
         <template #actions>
           <BaseButton label="Tambah Kategori" icon="pi pi-plus" @click="openCreate" />
+        </template>
+
+        <template #cell-itemTypeId="{ value }">
+          {{ itemTypeName(value) }}
         </template>
 
         <template #row-actions="{ data }">
@@ -127,6 +148,7 @@ onMounted(store.fetchAll)
       <CategoryForm
         :initial="formInitial"
         :submitting="submitting"
+        :item-types="itemTypeStore.items"
         @submit="onSubmit"
         @cancel="dialogVisible = false"
       />
