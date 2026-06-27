@@ -24,6 +24,7 @@ export interface Item {
   defaultUnitId: string
   barcode: string
   manufacturer: string
+  currentStock: number
   minimumStock: number
   maximumStock: number
   reorderPoint: number
@@ -31,6 +32,8 @@ export interface Item {
   trackExpiry: boolean
   prescriptionRequired: boolean
   isActive: boolean
+  expiryDate?: string
+  description?: string
   suppliers: ItemSupplier[]
   prices: ItemPrice[]
   conversions: ItemConversion[]
@@ -47,6 +50,7 @@ export function emptyItem(): ItemInput {
     defaultUnitId: '',
     barcode: '',
     manufacturer: '',
+    currentStock: 0,
     minimumStock: 0,
     maximumStock: 0,
     reorderPoint: 0,

@@ -25,9 +25,14 @@ function fromApi(raw: ApiItem): Item {
     defaultUnitId: raw.defaultUnit?.id ?? raw.defaultUnitId ?? '',
     barcode: raw.barcode ?? '',
     manufacturer: raw.manufacturer ?? '',
+    // stock-related fields
+    currentStock: (raw as any).currentStock ?? (raw as any).stock ?? 0,
     minimumStock: raw.minimumStock ?? 0,
     maximumStock: raw.maximumStock ?? 0,
     reorderPoint: raw.reorderPoint ?? 0,
+    // optional metadata
+    expiryDate: (raw as any).expiryDate ?? '',
+    description: (raw as any).description ?? '',
     trackBatch: raw.trackBatch ?? false,
     trackExpiry: raw.trackExpiry ?? false,
     prescriptionRequired: raw.prescriptionRequired ?? false,
