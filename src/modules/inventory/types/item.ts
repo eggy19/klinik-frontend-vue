@@ -15,6 +15,12 @@ export interface ItemConversion {
   factor: number
 }
 
+export interface ItemCategory {
+  categoryId: string
+  isPrimary: boolean
+  categoryName: string
+}
+
 export interface Item {
   id: string
   itemCode: string
@@ -37,6 +43,8 @@ export interface Item {
   suppliers: ItemSupplier[]
   prices: ItemPrice[]
   conversions: ItemConversion[]
+  categorys: ItemCategory[]
+
 }
 
 export type ItemInput = Omit<Item, 'id' | 'isActive'>
@@ -60,5 +68,7 @@ export function emptyItem(): ItemInput {
     suppliers: [],
     prices: [],
     conversions: [],
+    categorys: [],  
+    description: '',  
   }
 }
