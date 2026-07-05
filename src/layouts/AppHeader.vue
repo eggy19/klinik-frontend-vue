@@ -1,15 +1,20 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
+import Menu from 'primevue/menu'
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
 import { useTenantStore } from '@/stores/tenant'
 import { useBranchStore } from '@/stores/branch'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 
+const router = useRouter()
 const app = useAppStore()
 const theme = useThemeStore()
 const tenant = useTenantStore()
 const branch = useBranchStore()
+const auth = useAuthStore()
 
 const isMobile = () => window.matchMedia('(max-width: 767px)').matches
 
@@ -20,6 +25,27 @@ function onMenuClick() {
 }
 
 const themeIcon = computed(() => (theme.isDark ? 'pi pi-sun' : 'pi pi-moon'))
+
+const accountMenu = ref()
+const accountMenuItems = [
+  {
+    label: 'Keluar',
+    icon: 'pi pi-sign-out',
+    command: onLogout,
+  },
+]
+
+function toggleAccountMenu(event: Event) {
+  accountMenu.value?.toggle(event)
+}
+
+async function onLogout() {
+  try {
+    await auth.logout()
+  } finally {
+    router.push('/login')
+  }
+}
 </script>
 
 <template>
@@ -46,7 +72,22 @@ const themeIcon = computed(() => (theme.isDark ? 'pi pi-sun' : 'pi pi-moon'))
         :aria-label="theme.isDark ? 'Mode terang' : 'Mode gelap'"
         @click="theme.toggle()"
       />
-      <Button icon="pi pi-user" text rounded aria-label="Akun" />
+      <Button
+        icon="pi pi-user"
+        text
+        rounded
+        aria-label="Akun"
+        aria-haspopup="true"
+        @click="toggleAccountMenu"
+      />
+      <Menu ref="accountMenu" :model="accountMenuItems" popup>
+        <template #start>
+          <div class="header__account">
+            <span class="header__account-name">{{ auth.user?.name }}</span>
+            <span class="header__account-email">{{ auth.user?.email }}</span>
+          </div>
+        </template>
+      </Menu>
     </div>
   </header>
 </template>
@@ -86,6 +127,24 @@ const themeIcon = computed(() => (theme.isDark ? 'pi pi-sun' : 'pi pi-moon'))
 }
 
 .header__branch {
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+}
+
+.header__account {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  padding: var(--space-2) var(--space-3);
+}
+
+.header__account-name {
+  font-weight: var(--font-weight-heading);
+  color: var(--text);
+  font-size: var(--font-sm);
+}
+
+.header__account-email {
   color: var(--text-muted);
   font-size: var(--font-xs);
 }

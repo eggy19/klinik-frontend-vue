@@ -31,21 +31,21 @@ function toApi(input: CategoryInput): Omit<ApiCategory, 'id'> {
 
 export const categoryApi = {
   async getCategories(): Promise<Category[]> {
-    const res = await apiClient.get<ApiResponse<ApiCategory[]>>('/master/categories')
+    const res = await apiClient.get<ApiResponse<ApiCategory[]>>('/inventory/master/categories')
     return res.data.data.map(fromApi)
   },
 
   async createCategory(input: CategoryInput): Promise<Category> {
-    const res = await apiClient.post<ApiResponse<ApiCategory>>('/master/categories', toApi(input))
+    const res = await apiClient.post<ApiResponse<ApiCategory>>('/inventory/master/categories', toApi(input))
     return fromApi(res.data.data)
   },
 
   async updateCategory(id: string, input: CategoryInput): Promise<Category> {
-    const res = await apiClient.put<ApiResponse<ApiCategory>>(`/master/categories/${id}`, toApi(input))
+    const res = await apiClient.put<ApiResponse<ApiCategory>>(`/inventory/master/categories/${id}`, toApi(input))
     return fromApi(res.data.data)
   },
 
   async deleteCategory(id: string): Promise<void> {
-    await apiClient.delete(`/master/categories/${id}`)
+    await apiClient.delete(`/inventory/master/categories/${id}`)
   },
 }

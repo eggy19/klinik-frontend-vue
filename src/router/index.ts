@@ -1,7 +1,14 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 
 // Route lazy-loaded (docs/07 — lazy loading wajib untuk route).
 const routes: RouteRecordRaw[] = [
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('@/modules/auth/views/LoginView.vue'),
+    meta: { title: 'Masuk', public: true, layout: 'blank' },
+  },
   {
     path: '/',
     name: 'dashboard',
@@ -61,6 +68,30 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+})
+
+router.beforeEach(async (to) => {
+  const authStore = useAuthStore()
+
+  // Cek sesi sekali saat bootstrap app (navigasi pertama), bukan di tiap navigasi.
+  if (!authStore.initialized) {
+    await authStore.checkAuth()
+  }
+
+  const isPublic = to.meta.public === true
+
+  if (!isPublic && !authStore.isAuthenticated) {
+    if (to.path !== '/login') {
+      sessionStorage.setItem('redirectAfterLogin', to.fullPath)
+    }
+    return { path: '/login' }
+  }
+
+  if (to.path === '/login' && authStore.isAuthenticated) {
+    return { path: '/' }
+  }
+
+  return true
 })
 
 export default router

@@ -34,21 +34,21 @@ function toApi(input: SupplierInput): Omit<ApiSupplier, 'id'> {
 
 export const supplierApi = {
   async getAll(): Promise<Supplier[]> {
-    const res = await apiClient.get<ApiResponse<ApiSupplier[]>>('/master/suppliers')
+    const res = await apiClient.get<ApiResponse<ApiSupplier[]>>('/inventory/master/suppliers')
     return res.data.data.map(fromApi)
   },
 
   async create(input: SupplierInput): Promise<Supplier> {
-    const res = await apiClient.post<ApiResponse<ApiSupplier>>('/master/suppliers', toApi(input))
+    const res = await apiClient.post<ApiResponse<ApiSupplier>>('/inventory/master/suppliers', toApi(input))
     return fromApi(res.data.data)
   },
 
   async update(id: string, input: SupplierInput): Promise<Supplier> {
-    const res = await apiClient.put<ApiResponse<ApiSupplier>>(`/master/suppliers/${id}`, toApi(input))
+    const res = await apiClient.put<ApiResponse<ApiSupplier>>(`/inventory/master/suppliers/${id}`, toApi(input))
     return fromApi(res.data.data)
   },
 
   async remove(id: string): Promise<void> {
-    await apiClient.delete(`/master/suppliers/${id}`)
+    await apiClient.delete(`/inventory/master/suppliers/${id}`)
   },
 }

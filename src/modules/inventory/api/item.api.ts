@@ -40,34 +40,34 @@ function fromApi(raw: ApiItem): Item {
 
 export const itemApi = {
   async getAll(): Promise<Item[]> {
-    const res = await apiClient.get<ApiResponse<ApiItem[]>>('/master/items')
+    const res = await apiClient.get<ApiResponse<ApiItem[]>>('/inventory/master/items')
     return res.data.data.map(fromApi)
   },
 
   async getById(id: string): Promise<Item> {
-    const res = await apiClient.get<ApiResponse<ApiItem>>(`/master/items/${id}`)
+    const res = await apiClient.get<ApiResponse<ApiItem>>(`/inventory/master/items/${id}`)
     return fromApi(res.data.data)
   },
 
   async create(input: ItemInput): Promise<Item> {
-    const res = await apiClient.post<ApiResponse<ApiItem>>('/master/items', input)
+    const res = await apiClient.post<ApiResponse<ApiItem>>('/inventory/master/items', input)
     return fromApi(res.data.data)
   },
 
   async update(id: string, input: ItemInput): Promise<Item> {
-    const res = await apiClient.put<ApiResponse<ApiItem>>(`/master/items/${id}`, input)
+    const res = await apiClient.put<ApiResponse<ApiItem>>(`/inventory/master/items/${id}`, input)
     return fromApi(res.data.data)
   },
 
   async activate(id: string): Promise<void> {
-    await apiClient.patch(`/master/items/${id}/activate`)
+    await apiClient.patch(`/inventory/master/items/${id}/activate`)
   },
 
   async deactivate(id: string): Promise<void> {
-    await apiClient.patch(`/master/items/${id}/deactivate`)
+    await apiClient.patch(`/inventory/master/items/${id}/deactivate`)
   },
 
   async remove(id: string): Promise<void> {
-    await apiClient.delete(`/master/items/${id}`)
+    await apiClient.delete(`/inventory/master/items/${id}`)
   },
 }
