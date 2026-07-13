@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import BaseInput from '@/components/base/BaseInput.vue'
 import BaseSelect from '@/components/base/BaseSelect.vue'
+import BaseTag from '@/components/base/BaseTag.vue'
 import type { ItemInput } from '../../types/item'
 import type { ItemType } from '../../types/item-type'
 import type { Category } from '../../types/category'
 import type { Unit } from '../../types/unit'
+import type { DrugGroup } from '../../types/drug-group'
 
 const props = defineProps<{
   form: ItemInput
@@ -14,10 +16,25 @@ const props = defineProps<{
   itemTypes: ItemType[]
   categories: Category[]
   units: Unit[]
+  drugGroups: DrugGroup[]
 }>()
 
 const filteredCategories = computed(() =>
   props.categories.filter((c) => c.itemTypeId === props.form.itemTypeId),
+)
+
+// Status "perlu resep" murni turunan dari Golongan Obat yang dipilih —
+// tidak lagi diinput manual di form Item.
+const selectedDrugGroup = computed(
+  () => props.drugGroups.find((g) => g.id === props.form.drugGroupId) ?? null,
+)
+
+watch(
+  selectedDrugGroup,
+  (dg) => {
+    props.form.prescriptionRequired = dg?.requiresPrescription ?? false
+  },
+  { immediate: true },
 )
 </script>
 
@@ -74,58 +91,42 @@ const filteredCategories = computed(() =>
       filter
       @update:model-value="form.categoryId = $event as string"
     />
-    <div class="md:col-span-2">
+    <BaseSelect
+      :model-value="form.defaultUnitId"
+      label="Satuan Default"
+      required
+      :options="units"
+      option-label="name"
+      option-value="id"
+      :error="errors.defaultUnitId"
+      filter
+      @update:model-value="form.defaultUnitId = $event as string"
+    />
+    <div class="item-form-basic__drug-group">
       <BaseSelect
-        :model-value="form.defaultUnitId"
-        label="Satuan Default"
-        required
-        :options="units"
+        :model-value="form.drugGroupId"
+        label="Golongan Obat"
+        :options="drugGroups"
         option-label="name"
         option-value="id"
-        :error="errors.defaultUnitId"
+        :error="errors.drugGroupId"
         filter
-        @update:model-value="form.defaultUnitId = $event as string"
+        show-clear
+        @update:model-value="form.drugGroupId = ($event as string) ?? ''"
       />
-    </div>
-    <div class="item-form-basic__toggle">
-      <label class="item-form-basic__toggle-label">
-        Perlu Resep Dokter
-      </label>
-      <div class="item-form-basic__toggle-row">
-        <input
-          type="checkbox"
-          :checked="form.prescriptionRequired"
-          @change="form.prescriptionRequired = ($event.target as HTMLInputElement).checked"
-        />
-        <span v-if="form.prescriptionRequired" class="item-form-basic__warning">
-          Item ini tidak dapat dijual melalui OTC Sales
-        </span>
-      </div>
+      <BaseTag
+        v-if="selectedDrugGroup"
+        :value="selectedDrugGroup.requiresPrescription ? 'Wajib Resep Dokter' : 'Bebas (Tanpa Resep)'"
+        :variant="selectedDrugGroup.requiresPrescription ? 'warning' : 'secondary'"
+      />
     </div>
   </div>
 </template>
 
 <style scoped>
-.item-form-basic__toggle {
+.item-form-basic__drug-group {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-}
-
-.item-form-basic__toggle-label {
-  font-size: var(--font-sm);
-  font-weight: var(--font-weight-heading);
-  color: var(--text);
-}
-
-.item-form-basic__toggle-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.item-form-basic__warning {
-  font-size: var(--font-sm);
-  color: var(--color-warning, #f59e0b);
+  gap: var(--space-2);
 }
 </style>

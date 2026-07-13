@@ -1,10 +1,12 @@
-<script setup lang="ts" generic="T">
+<script setup lang="ts" generic="T, V">
 import { computed, useId } from 'vue'
 import Select from 'primevue/select'
 
+// T = tipe option; V = tipe value yang dipilih. Dipisah karena saat memakai
+// option-value, model-nya adalah field dari option (mis. id), bukan option itu sendiri.
 const props = withDefaults(
   defineProps<{
-    modelValue?: T | null
+    modelValue?: V | null
     options: T[]
     optionLabel?: string
     optionValue?: string
@@ -14,17 +16,19 @@ const props = withDefaults(
     disabled?: boolean
     error?: string
     filter?: boolean
+    showClear?: boolean
   }>(),
   {
     placeholder: 'Pilih...',
     required: false,
     disabled: false,
     filter: false,
+    showClear: false,
   },
 )
 
 const emit = defineEmits<{
-  'update:modelValue': [value: T | null]
+  'update:modelValue': [value: V | null]
 }>()
 
 const fieldId = useId()
@@ -48,6 +52,7 @@ const hasError = computed(() => !!props.error)
       :disabled="disabled"
       :invalid="hasError"
       :filter="filter"
+      :show-clear="showClear"
       class="base-field__control"
       @update:model-value="emit('update:modelValue', $event)"
     />

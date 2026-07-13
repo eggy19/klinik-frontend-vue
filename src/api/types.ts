@@ -4,6 +4,19 @@ export interface ApiResponse<T> {
   data: T
 }
 
+export interface PaginationMeta {
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
+/** Payload endpoint list berpaginasi: `data: { items, meta }`. */
+export interface PaginatedData<T> {
+  items: T[]
+  meta: PaginationMeta
+}
+
 export interface ApiErrorResponse {
   success: false
   message: string

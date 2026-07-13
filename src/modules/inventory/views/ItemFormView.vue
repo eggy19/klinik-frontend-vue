@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Tabs from 'primevue/tabs'
 import TabList from 'primevue/tablist'
@@ -13,8 +13,9 @@ import { useItemTypeStore } from '../stores/item-type.store'
 import { useCategoryStore } from '../stores/category.store'
 import { useUnitStore } from '../stores/unit.store'
 import { useSupplierStore } from '../stores/supplier.store'
+import { useDrugGroupStore } from '../stores/drug-group.store'
 import { useToastFeedback } from '@/composables/useToastFeedback'
-import { emptyItem, type ItemInput } from '../types/item'
+import { emptyItem, type CurrentItemPrice, type ItemInput } from '../types/item'
 import ItemFormBasic from '../components/item-form/ItemFormBasic.vue'
 import ItemFormStock from '../components/item-form/ItemFormStock.vue'
 import ItemFormSuppliers from '../components/item-form/ItemFormSuppliers.vue'
@@ -29,6 +30,7 @@ const itemTypeStore = useItemTypeStore()
 const categoryStore = useCategoryStore()
 const unitStore = useUnitStore()
 const supplierStore = useSupplierStore()
+const drugGroupStore = useDrugGroupStore()
 
 const isEditMode = computed(() => !!route.params.id)
 const pageTitle = computed(() => (isEditMode.value ? 'Edit Item' : 'Tambah Item'))
@@ -37,6 +39,9 @@ const form = reactive<ItemInput>(emptyItem())
 const errors = reactive<Record<string, string>>({})
 const submitting = reactive({ value: false })
 const loadingItem = reactive({ value: false })
+// Harga aktif saat form dimuat — dipakai untuk deteksi apakah harga beli
+// berubah (baru trigger POST /prices baru) dan untuk info di ItemFormPrices.
+const currentPrice = ref<CurrentItemPrice | null>(null)
 
 function validate(): boolean {
   const e: Record<string, string> = {}
@@ -46,6 +51,10 @@ function validate(): boolean {
   if (!form.categoryId) e.categoryId = 'Kategori wajib dipilih.'
   if (!form.defaultUnitId) e.defaultUnitId = 'Satuan default wajib dipilih.'
   if (form.minimumStock < 0) e.minimumStock = 'Min stok tidak boleh negatif.'
+  if (form.purchasePrice < 0) e.purchasePrice = 'Harga beli tidak boleh negatif.'
+  if (form.marginPercentage !== null && form.marginPercentage < 0) {
+    e.marginPercentage = 'Margin tidak boleh negatif.'
+  }
 
   const hasCircular = form.conversions.some((c) => c.fromUnitId === c.toUnitId)
   if (hasCircular) e.conversions = 'Konversi tidak boleh dari dan ke satuan yang sama.'
@@ -59,11 +68,28 @@ async function onSubmit() {
   if (!validate()) return
   submitting.value = true
   try {
+    let itemId: string
     if (isEditMode.value) {
-      await itemApi.update(route.params.id as string, { ...form })
+      itemId = route.params.id as string
+      await itemApi.update(itemId, { ...form })
     } else {
-      await itemApi.create({ ...form })
+      const created = await itemApi.create({ ...form })
+      itemId = created.id
     }
+
+    // Master harga (master_item_price) dikelola lewat endpoint terpisah — cuma
+    // kirim entri harga baru kalau harga beli diisi dan berbeda dari yang aktif
+    // saat ini, supaya tidak membuat baris histori duplikat setiap kali disimpan.
+    const priceChanged =
+      form.purchasePrice > 0 &&
+      form.purchasePrice !== currentPrice.value?.purchasePrice
+    if (priceChanged) {
+      await itemApi.addPrice(itemId, {
+        purchasePrice: form.purchasePrice,
+        effectiveDate: new Date().toISOString().slice(0, 10),
+      })
+    }
+
     toast.success(isEditMode.value ? 'Item berhasil diperbarui.' : 'Item berhasil ditambahkan.')
     router.push('/inventory/obat')
   } catch {
@@ -83,18 +109,37 @@ onMounted(async () => {
     categoryStore.items.length === 0 ? categoryStore.fetchAll() : Promise.resolve(),
     unitStore.items.length === 0 ? unitStore.fetchAll() : Promise.resolve(),
     supplierStore.items.length === 0 ? supplierStore.fetchAll() : Promise.resolve(),
+    drugGroupStore.items.length === 0 ? drugGroupStore.fetchAll() : Promise.resolve(),
   ])
 
   if (isEditMode.value) {
     loadingItem.value = true
     try {
-      const item = await itemApi.getById(route.params.id as string)
+      const id = route.params.id as string
+      // Supplier, harga, dan konversi disediakan backend lewat endpoint terpisah,
+      // bukan bagian dari response detail item.
+      const [item, suppliers, price, conversions] = await Promise.all([
+        itemApi.getById(id),
+        itemApi.getSuppliers(id).catch(() => []),
+        itemApi.getCurrentPrice(id).catch(() => null),
+        itemApi.getConversions(id).catch(() => []),
+      ])
+      currentPrice.value = price
+
+      // Backend tidak menyimpan itemTypeId di item — turunkan dari kategorinya
+      // agar dropdown Tipe Item & Kategori ter-render.
+      const itemTypeId =
+        item.itemTypeId ||
+        categoryStore.items.find((c) => c.id === item.categoryId)?.itemTypeId ||
+        ''
+
       Object.assign(form, {
         itemCode: item.itemCode,
         itemName: item.itemName,
-        itemTypeId: item.itemTypeId,
+        itemTypeId,
         categoryId: item.categoryId,
         defaultUnitId: item.defaultUnitId,
+        drugGroupId: item.drugGroupId,
         barcode: item.barcode,
         manufacturer: item.manufacturer,
         minimumStock: item.minimumStock,
@@ -103,9 +148,10 @@ onMounted(async () => {
         trackBatch: item.trackBatch,
         trackExpiry: item.trackExpiry,
         prescriptionRequired: item.prescriptionRequired,
-        suppliers: item.suppliers,
-        prices: item.prices,
-        conversions: item.conversions,
+        marginPercentage: item.marginPercentage,
+        suppliers,
+        purchasePrice: price?.purchasePrice ?? 0,
+        conversions,
       })
     } catch {
       toast.error('Gagal memuat data item.')
@@ -146,6 +192,7 @@ onMounted(async () => {
           :item-types="itemTypeStore.items"
           :categories="categoryStore.items"
           :units="unitStore.items"
+          :drug-groups="drugGroupStore.items"
         />
       </BaseCard>
 
@@ -171,7 +218,12 @@ onMounted(async () => {
             </TabPanel>
             <TabPanel value="harga">
               <div class="item-form-view__tab-content">
-                <ItemFormPrices :form="form" :units="unitStore.items" />
+                <ItemFormPrices
+                  :form="form"
+                  :units="unitStore.items"
+                  :current-price="currentPrice"
+                  :errors="errors"
+                />
               </div>
             </TabPanel>
             <TabPanel value="konversi">

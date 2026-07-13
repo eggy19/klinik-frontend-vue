@@ -3,10 +3,13 @@ export interface ItemSupplier {
   isPrimary: boolean
 }
 
-export interface ItemPrice {
-  unitId: string
+// Backend hanya simpan 1 harga aktif per item (tanpa dimensi satuan) —
+// selling/margin selalu turunan server-side, tidak diinput manual.
+export interface CurrentItemPrice {
   purchasePrice: number
   sellingPrice: number
+  marginPercentage: number
+  effectiveDate: string
 }
 
 export interface ItemConversion {
@@ -22,6 +25,7 @@ export interface Item {
   itemTypeId: string
   categoryId: string
   defaultUnitId: string
+  drugGroupId: string
   barcode: string
   manufacturer: string
   minimumStock: number
@@ -30,13 +34,17 @@ export interface Item {
   trackBatch: boolean
   trackExpiry: boolean
   prescriptionRequired: boolean
+  /** Override margin % khusus item ini; null = pakai default OTC/Resep dari Pengaturan Margin. */
+  marginPercentage: number | null
   isActive: boolean
   suppliers: ItemSupplier[]
-  prices: ItemPrice[]
+  currentPrice: CurrentItemPrice | null
   conversions: ItemConversion[]
 }
 
-export type ItemInput = Omit<Item, 'id' | 'isActive'>
+export type ItemInput = Omit<Item, 'id' | 'isActive' | 'currentPrice'> & {
+  purchasePrice: number
+}
 
 export function emptyItem(): ItemInput {
   return {
@@ -45,6 +53,7 @@ export function emptyItem(): ItemInput {
     itemTypeId: '',
     categoryId: '',
     defaultUnitId: '',
+    drugGroupId: '',
     barcode: '',
     manufacturer: '',
     minimumStock: 0,
@@ -53,8 +62,9 @@ export function emptyItem(): ItemInput {
     trackBatch: false,
     trackExpiry: false,
     prescriptionRequired: false,
+    marginPercentage: null,
     suppliers: [],
-    prices: [],
+    purchasePrice: 0,
     conversions: [],
   }
 }

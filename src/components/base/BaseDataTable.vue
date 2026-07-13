@@ -1,6 +1,6 @@
 <script setup lang="ts" generic="T extends Record<string, unknown>">
-import { computed, ref, useSlots } from 'vue'
-import DataTable from 'primevue/datatable'
+import { computed, ref, useSlots, watch } from 'vue'
+import DataTable, { type DataTablePageEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
 import InputText from 'primevue/inputtext'
 import IconField from 'primevue/iconfield'
@@ -28,6 +28,14 @@ const props = withDefaults(
     exportFilename?: string
     emptyTitle?: string
     emptyDescription?: string
+    /**
+     * Mode server-side: data sudah dipaginasi backend. Search/sort/filter lokal
+     * dimatikan; paginator memakai totalRecords dan emit event `page` (1-based).
+     */
+    lazy?: boolean
+    totalRecords?: number
+    /** Sembunyikan kotak pencarian (mis. lazy table tanpa dukungan search backend). */
+    showSearch?: boolean
   }>(),
   {
     loading: false,
@@ -35,14 +43,28 @@ const props = withDefaults(
     searchPlaceholder: 'Cari...',
     exportFilename: 'data',
     emptyTitle: 'Belum ada data',
+    lazy: false,
+    totalRecords: 0,
+    showSearch: true,
   },
 )
+
+const emit = defineEmits<{
+  page: [value: { page: number; rows: number }]
+  search: [value: string]
+}>()
 
 // --- Search (kiri atas) dengan debounce 300ms (docs/06) ---
 const search = ref('')
 const debouncedSearch = useDebounce(search, 300)
 
+// Mode lazy meneruskan pencarian ke pemanggil, mode biasa memfilter lokal.
+watch(debouncedSearch, (term) => {
+  if (props.lazy) emit('search', term.trim())
+})
+
 const filteredRows = computed(() => {
+  if (props.lazy) return props.value
   const term = debouncedSearch.value.trim().toLowerCase()
   if (!term) return props.value
   return props.value.filter((row) =>
@@ -55,10 +77,14 @@ const visibleColumns = ref<DataTableColumn[]>([...props.columns])
 const isVisible = (field: string) => visibleColumns.value.some((c) => c.field === field)
 const shownColumns = computed(() => props.columns.filter((c) => isVisible(c.field)))
 
-// --- Export CSV (kolom yang sedang tampil) ---
+// --- Export CSV (kolom yang sedang tampil; nonaktif di mode lazy — data tidak lengkap) ---
 function exportCsv() {
   const cols = shownColumns.value.map((c) => ({ field: c.field, header: c.header }))
   downloadCsv(props.exportFilename, toCsv(filteredRows.value, cols))
+}
+
+function onPage(event: DataTablePageEvent) {
+  emit('page', { page: event.page + 1, rows: event.rows })
 }
 
 // Placeholder baris untuk skeleton loading.
@@ -70,12 +96,16 @@ const hasRowActions = computed(() => !!slots['row-actions'])
 
 <template>
   <div class="base-table">
-    <!-- Toolbar: search kiri, aksi kanan (docs/06) -->
+    <!-- Toolbar: search + filter kiri, aksi kanan (docs/06) -->
     <div class="base-table__toolbar">
-      <IconField class="base-table__search">
-        <InputIcon class="pi pi-search" />
-        <InputText v-model="search" :placeholder="searchPlaceholder" />
-      </IconField>
+      <div class="base-table__filters">
+        <IconField v-if="showSearch" class="base-table__search">
+          <InputIcon class="pi pi-search" />
+          <InputText v-model="search" :placeholder="searchPlaceholder" />
+        </IconField>
+        <!-- Filter domain-specific (dropdown kategori, status, dsb.) diisi oleh view -->
+        <slot name="filters" />
+      </div>
 
       <div class="base-table__tools">
         <MultiSelect
@@ -90,6 +120,7 @@ const hasRowActions = computed(() => !!slots['row-actions'])
           data-key="field"
         />
         <Button
+          v-if="!lazy"
           icon="pi pi-download"
           label="Export CSV"
           severity="secondary"
@@ -137,18 +168,21 @@ const hasRowActions = computed(() => !!slots['row-actions'])
       :rows="rows"
       :rows-per-page-options="[10, 20, 30, 50]"
       paginator
+      :lazy="lazy"
+      :total-records="lazy ? totalRecords : undefined"
       removable-sort
       data-key="id"
       class="base-table__grid"
       paginator-template="RowsPerPageDropdown CurrentPageReport PrevPageLink NextPageLink"
       current-page-report-template="{first}–{last} dari {totalRecords}"
+      @page="onPage"
     >
       <Column
         v-for="col in shownColumns"
         :key="col.field"
         :field="col.field"
         :header="col.header"
-        :sortable="col.sortable ?? true"
+        :sortable="lazy ? false : (col.sortable ?? true)"
       >
         <template #body="{ data }">
           <slot :name="`cell-${col.field}`" :data="data" :value="data[col.field]">
@@ -180,6 +214,14 @@ const hasRowActions = computed(() => !!slots['row-actions'])
   gap: var(--space-3);
   align-items: center;
   justify-content: space-between;
+}
+
+.base-table__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  flex: 1 1 auto;
 }
 
 .base-table__search {
