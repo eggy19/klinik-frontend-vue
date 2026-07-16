@@ -71,6 +71,43 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/modules/inventory/views/MarginSettingView.vue'),
     meta: { title: 'Pengaturan Margin' },
   },
+  // Purchasing: Purchase Order + Goods Receipt.
+  {
+    path: '/inventory/purchase-orders',
+    name: 'purchasing-po-list',
+    component: () => import('@/modules/purchasing/views/PurchaseOrderListView.vue'),
+    meta: { title: 'Purchase Order' },
+  },
+  {
+    path: '/inventory/purchase-orders/baru',
+    name: 'purchasing-po-create',
+    component: () => import('@/modules/purchasing/views/PurchaseOrderFormView.vue'),
+    meta: { title: 'Buat Purchase Order' },
+  },
+  {
+    path: '/inventory/purchase-orders/:id/edit',
+    name: 'purchasing-po-edit',
+    component: () => import('@/modules/purchasing/views/PurchaseOrderFormView.vue'),
+    meta: { title: 'Edit Purchase Order' },
+  },
+  {
+    path: '/inventory/purchase-orders/:id',
+    name: 'purchasing-po-detail',
+    component: () => import('@/modules/purchasing/views/PurchaseOrderDetailView.vue'),
+    meta: { title: 'Detail Purchase Order' },
+  },
+  {
+    path: '/inventory/goods-receipts',
+    name: 'purchasing-gr-list',
+    component: () => import('@/modules/purchasing/views/GoodsReceiptListView.vue'),
+    meta: { title: 'Goods Receipt' },
+  },
+  {
+    path: '/inventory/goods-receipts/:id',
+    name: 'purchasing-gr-detail',
+    component: () => import('@/modules/purchasing/views/GoodsReceiptDetailView.vue'),
+    meta: { title: 'Detail Goods Receipt' },
+  },
   // Administrasi (data master + keamanan); default ke Tenant.
   { path: '/admin', redirect: '/admin/tenant' },
   {

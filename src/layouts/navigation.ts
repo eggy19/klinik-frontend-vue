@@ -29,9 +29,8 @@ export const navItems: NavItem[] = [
         label: 'Purchasing',
         icon: 'pi pi-shopping-cart',
         children: [
-          // Belum ada halaman/route — menunggu modul purchasing dibuat.
-          { label: 'Purchase Order', icon: 'pi pi-file-edit' },
-          { label: 'Good Receipt', icon: 'pi pi-inbox' },
+          { label: 'Purchase Order', icon: 'pi pi-file-edit', to: '/inventory/purchase-orders' },
+          { label: 'Good Receipt', icon: 'pi pi-inbox', to: '/inventory/goods-receipts' },
         ],
       },
       {

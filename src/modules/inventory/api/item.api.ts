@@ -1,7 +1,14 @@
 import axios from 'axios'
 import { apiClient } from '@/api/client'
-import type { ApiResponse } from '@/api/types'
-import type { CurrentItemPrice, Item, ItemConversion, ItemInput, ItemSupplier } from '../types/item'
+import type { ApiResponse, PaginationMeta } from '@/api/types'
+import type {
+  CurrentItemPrice,
+  Item,
+  ItemConversion,
+  ItemInput,
+  ItemSupplier,
+  ItemUnitLink,
+} from '../types/item'
 
 // Shape dari backend — GET detail memakai nested objects, POST/PUT memakai IDs.
 // Field numerik (kolom `numeric` di Postgres) dikirim sebagai string, mis. "10.00".
@@ -92,6 +99,12 @@ interface ApiItemConversion {
   conversionFactor?: number | string | null
 }
 
+interface ApiItemUnit {
+  id: string
+  unitId: string
+  isBaseUnit?: boolean
+}
+
 function fromApiPrice(raw: ApiItemPrice): CurrentItemPrice {
   return {
     purchasePrice: toNumber(raw.purchasePrice),
@@ -110,9 +123,49 @@ function toCreatePayload(input: ItemInput) {
 }
 
 export const itemApi = {
-  async getAll(): Promise<Item[]> {
-    const res = await apiClient.get<ApiResponse<ApiItem[]>>('/inventory/master/items')
+  /** `supplierId` memfilter ke item yang terdaftar pada supplier itu (item_supplier) — dipakai form Purchase Order. */
+  async getAll(query?: { supplierId?: string; limit?: number }): Promise<Item[]> {
+    const res = await apiClient.get<ApiResponse<ApiItem[]>>('/inventory/master/items', {
+      params: {
+        supplierId: query?.supplierId,
+        limit: query?.limit ?? 100,
+      },
+    })
     return res.data.data.map(fromApi)
+  },
+
+  /**
+   * Seluruh item milik satu supplier, tanpa batas — backend mem-paginasi
+   * (maks. `limit=100` per halaman, lihat PaginationQueryDto), jadi di sini
+   * di-loop per halaman sampai habis alih-alih memaksa limit besar yang akan
+   * ditolak validasi.
+   */
+  async getAllForSupplier(supplierId: string): Promise<Item[]> {
+    const limit = 100
+    let page = 1
+    const all: Item[] = []
+    for (;;) {
+      const res = await apiClient.get<ApiResponse<ApiItem[]> & { pagination: PaginationMeta }>(
+        '/inventory/master/items',
+        { params: { supplierId, page, limit } },
+      )
+      all.push(...res.data.data.map(fromApi))
+      if (page >= res.data.pagination.totalPages) break
+      page++
+    }
+    return all
+  },
+
+  /** Satuan yang terdaftar untuk item ini (master_item_unit) — dipakai dropdown satuan di baris Purchase Order. */
+  async getUnits(id: string): Promise<ItemUnitLink[]> {
+    const res = await apiClient.get<ApiResponse<ApiItemUnit[]>>(
+      `/inventory/master/items/${id}/units`,
+    )
+    return res.data.data.map((r) => ({
+      id: r.id,
+      unitId: r.unitId,
+      isBaseUnit: r.isBaseUnit ?? false,
+    }))
   },
 
   async getById(id: string): Promise<Item> {

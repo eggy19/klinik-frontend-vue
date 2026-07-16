@@ -18,6 +18,13 @@ export interface ItemConversion {
   factor: number
 }
 
+/** Satuan yang terdaftar untuk sebuah item (master_item_unit), dipakai untuk dropdown satuan di form Purchase Order. */
+export interface ItemUnitLink {
+  id: string
+  unitId: string
+  isBaseUnit: boolean
+}
+
 export interface Item {
   id: string
   itemCode: string
