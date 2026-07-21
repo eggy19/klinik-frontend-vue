@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import BaseCard from '@/components/base/BaseCard.vue'
+import BaseCard from './BaseCard.vue'
 
 type Variant = 'primary' | 'success' | 'warning' | 'danger' | 'info'
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import SummaryCard from '../components/SummaryCard.vue'
+import BaseSummaryCard from '@/components/base/BaseSummaryCard.vue'
 import { useMedicineStore } from '@/modules/inventory/stores/medicine.store'
 
 const inventory = useMedicineStore()
@@ -19,28 +19,28 @@ onMounted(() => {
 
     <!-- Grid responsive: 4/3/2/1 kolom (docs/07) -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      <SummaryCard
+      <BaseSummaryCard
         title="Total Item"
         :value="inventory.totalItems"
         icon="pi pi-box"
         variant="primary"
         :loading="inventory.loading"
       />
-      <SummaryCard
+      <BaseSummaryCard
         title="Stok Rendah"
         :value="inventory.lowStockCount"
         icon="pi pi-exclamation-triangle"
         variant="warning"
         :loading="inventory.loading"
       />
-      <SummaryCard
+      <BaseSummaryCard
         title="Mendekati Kedaluwarsa"
         :value="inventory.nearExpiredCount"
         icon="pi pi-clock"
         variant="danger"
         :loading="inventory.loading"
       />
-      <SummaryCard
+      <BaseSummaryCard
         title="Transaksi Hari Ini"
         :value="todayTransaction"
         icon="pi pi-shopping-cart"

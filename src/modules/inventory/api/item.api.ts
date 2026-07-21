@@ -65,7 +65,7 @@ function fromApi(raw: ApiItem): Item {
     defaultUnitId: raw.defaultUnit?.id ?? raw.defaultUnitId ?? raw.baseUnitId ?? '',
     drugGroupId: raw.drugGroup?.id ?? raw.drugGroupId ?? '',
     barcode: raw.barcode ?? '',
-    manufacturer: raw.manufacturer ?? '',
+    skuCode: raw.skuCode ?? '',
     minimumStock: toNumber(raw.minimumStock),
     maximumStock: toNumber(raw.maximumStock),
     reorderPoint: toNumber(raw.reorderPoint),

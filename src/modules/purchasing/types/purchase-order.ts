@@ -75,10 +75,19 @@ export function emptyPurchaseOrder(): PurchaseOrderInput {
   return { supplierId: '', note: '', items: [] }
 }
 
+export type PurchaseOrderStatusGroup = 'DRAFT' | 'ACTIVE' | 'ARCHIVE'
+
+export interface PurchaseOrderStats {
+  totalActive: number
+  pendingApproval: number
+  monthlySpend: number
+}
+
 export interface QueryPurchaseOrder {
   page?: number
   limit?: number
   status?: PurchaseOrderStatus
+  statusGroup?: PurchaseOrderStatusGroup
   supplierId?: string
   search?: string
 }

@@ -34,7 +34,7 @@ export interface Item {
   defaultUnitId: string
   drugGroupId: string
   barcode: string
-  manufacturer: string
+  skuCode: string
   minimumStock: number
   maximumStock: number
   reorderPoint: number
@@ -62,7 +62,7 @@ export function emptyItem(): ItemInput {
     defaultUnitId: '',
     drugGroupId: '',
     barcode: '',
-    manufacturer: '',
+    skuCode: '',
     minimumStock: 0,
     maximumStock: 0,
     reorderPoint: 0,

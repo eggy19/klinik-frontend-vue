@@ -4,6 +4,7 @@ import type {
   PurchaseOrder,
   PurchaseOrderInput,
   PurchaseOrderItem,
+  PurchaseOrderStats,
   PurchaseOrderStatus,
   QueryPurchaseOrder,
 } from '../types/purchase-order'
@@ -75,6 +76,12 @@ function fromApi(raw: ApiPurchaseOrder): PurchaseOrder {
   }
 }
 
+interface ApiPurchaseOrderStats {
+  totalActive: number
+  pendingApproval: number
+  monthlySpend: number | string
+}
+
 function toCreatePayload(input: PurchaseOrderInput) {
   return {
     supplierId: input.supplierId,
@@ -97,6 +104,17 @@ export const purchaseOrderApi = {
       { params: query },
     )
     return { items: res.data.data.map(fromApi), pagination: res.data.pagination }
+  },
+
+  async getStats(): Promise<PurchaseOrderStats> {
+    const res = await apiClient.get<ApiResponse<ApiPurchaseOrderStats>>(
+      '/inventory/purchase-orders/stats',
+    )
+    return {
+      totalActive: toNumber(res.data.data.totalActive),
+      pendingApproval: toNumber(res.data.data.pendingApproval),
+      monthlySpend: toNumber(res.data.data.monthlySpend),
+    }
   },
 
   async getById(id: string): Promise<PurchaseOrder> {

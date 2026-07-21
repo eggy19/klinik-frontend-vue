@@ -5,6 +5,7 @@ import { useConfirm } from 'primevue/useconfirm'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseDialog from '@/components/base/BaseDialog.vue'
+import { useSupplierStore } from '@/modules/inventory/stores/supplier.store'
 import { useToastFeedback } from '@/composables/useToastFeedback'
 import { formatCurrency, formatDate, formatDateTime } from '@/utils/format'
 import { usePurchaseOrderStore } from '../stores/purchase-order.store'
@@ -20,6 +21,7 @@ const toast = useToastFeedback()
 const confirm = useConfirm()
 const store = usePurchaseOrderStore()
 const goodsReceiptStore = useGoodsReceiptStore()
+const supplierStore = useSupplierStore()
 
 const po = ref<PurchaseOrder | null>(null)
 const receipts = ref<GoodsReceipt[]>([])
@@ -36,12 +38,17 @@ const canReceive = computed(
   () => po.value?.status === 'APPROVED' || po.value?.status === 'PARTIALLY_RECEIVED',
 )
 
+const selectedSupplier = computed(
+  () => supplierStore.items.find((s) => s.id === po.value?.supplierId) ?? null,
+)
+
 async function load() {
   loading.value = true
   try {
     const [poData, receiptData] = await Promise.all([
       store.fetchOne(poId.value),
       goodsReceiptStore.fetchForPo(poId.value),
+      supplierStore.items.length === 0 ? supplierStore.fetchAll() : Promise.resolve(),
     ])
     po.value = poData
     receipts.value = receiptData
@@ -128,120 +135,161 @@ onMounted(load)
     <div v-if="loading || !po" class="po-detail__loading">Memuat data...</div>
 
     <template v-else>
-      <BaseCard>
-        <div class="po-detail__header">
-          <div>
-            <div class="po-detail__po-number">{{ po.poNumber }}</div>
-            <div class="po-detail__supplier">{{ po.supplierName }}</div>
-          </div>
-          <PurchaseOrderStatusTag :status="po.status" />
-        </div>
-
-        <dl class="po-detail__meta">
-          <div>
-            <dt>Tanggal Dibuat</dt>
-            <dd>{{ formatDateTime(po.createdAt) }}</dd>
-          </div>
-          <div v-if="po.submittedAt">
-            <dt>Tanggal Submit</dt>
-            <dd>{{ formatDateTime(po.submittedAt) }}</dd>
-          </div>
-          <div v-if="po.approvedAt">
-            <dt>Tanggal Disetujui</dt>
-            <dd>{{ formatDateTime(po.approvedAt) }}</dd>
-          </div>
-          <div v-if="po.cancelledAt">
-            <dt>Tanggal Dibatalkan</dt>
-            <dd>{{ formatDateTime(po.cancelledAt) }}</dd>
-          </div>
-          <div v-if="po.note">
-            <dt>Catatan</dt>
-            <dd>{{ po.note }}</dd>
-          </div>
-        </dl>
-
-        <div class="po-detail__actions">
-          <BaseButton v-if="canEdit" label="Edit" icon="pi pi-pencil" variant="secondary" @click="goEdit" />
-          <BaseButton v-if="canSubmit" label="Submit" icon="pi pi-send" @click="doSubmit" />
-          <BaseButton v-if="canApprove" label="Setujui" icon="pi pi-check" @click="doApprove" />
-          <BaseButton
-            v-if="canReceive"
-            label="Terima Barang"
-            icon="pi pi-inbox"
-            @click="receiveDialogVisible = true"
-          />
-          <BaseButton v-if="canCancel" label="Batalkan" icon="pi pi-times" variant="danger" @click="confirmCancel" />
-        </div>
-      </BaseCard>
-
-      <BaseCard>
-        <template #header>
-          <span class="po-detail__section-title">Item</span>
-        </template>
-        <table class="po-detail__table">
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th>Satuan</th>
-              <th class="po-detail__col-num">Qty</th>
-              <th class="po-detail__col-num">Diterima</th>
-              <th class="po-detail__col-num">Harga Beli</th>
-              <th class="po-detail__col-num">Subtotal</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in po.items" :key="item.id">
-              <td>{{ item.itemName }}</td>
-              <td>{{ item.unitName }}</td>
-              <td class="po-detail__col-num">{{ item.quantity }}</td>
-              <td class="po-detail__col-num">{{ item.receivedQuantity }}</td>
-              <td class="po-detail__col-num">{{ formatCurrency(item.unitPrice) }}</td>
-              <td class="po-detail__col-num">{{ formatCurrency(item.quantity * item.unitPrice) }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="po-detail__total">
-          <span>Total</span>
-          <span class="po-detail__total-value">{{ formatCurrency(po.totalAmount) }}</span>
-        </div>
-      </BaseCard>
-
-      <BaseCard>
-        <template #header>
-          <span class="po-detail__section-title">Riwayat Penerimaan</span>
-        </template>
-        <p v-if="receipts.length === 0" class="po-detail__empty">Belum ada barang yang diterima.</p>
-        <div v-else class="po-detail__receipts">
-          <div v-for="r in receipts" :key="r.id" class="po-detail__receipt">
-            <div class="po-detail__receipt-head">
-              <span class="po-detail__receipt-number">{{ r.receiptNumber }}</span>
-              <span class="po-detail__receipt-date">{{ formatDateTime(r.receivedAt) }}</span>
+      <div class="po-detail__grid">
+        <div class="po-detail__main">
+          <BaseCard>
+            <div class="po-detail__header">
+              <div>
+                <div class="po-detail__po-number">{{ po.poNumber }}</div>
+                <div class="po-detail__supplier">{{ po.supplierName }}</div>
+              </div>
+              <PurchaseOrderStatusTag :status="po.status" />
             </div>
+
+            <dl class="po-detail__meta">
+              <div>
+                <dt>Tanggal Dibuat</dt>
+                <dd>{{ formatDateTime(po.createdAt) }}</dd>
+              </div>
+              <div v-if="po.submittedAt">
+                <dt>Tanggal Submit</dt>
+                <dd>{{ formatDateTime(po.submittedAt) }}</dd>
+              </div>
+              <div v-if="po.approvedAt">
+                <dt>Tanggal Disetujui</dt>
+                <dd>{{ formatDateTime(po.approvedAt) }}</dd>
+              </div>
+              <div v-if="po.cancelledAt">
+                <dt>Tanggal Dibatalkan</dt>
+                <dd>{{ formatDateTime(po.cancelledAt) }}</dd>
+              </div>
+              <div v-if="po.note">
+                <dt>Catatan</dt>
+                <dd>{{ po.note }}</dd>
+              </div>
+            </dl>
+
+            <div class="po-detail__actions">
+              <BaseButton v-if="canEdit" label="Edit" icon="pi pi-pencil" variant="secondary" @click="goEdit" />
+              <BaseButton v-if="canSubmit" label="Submit" icon="pi pi-send" @click="doSubmit" />
+              <BaseButton v-if="canApprove" label="Setujui" icon="pi pi-check" @click="doApprove" />
+              <BaseButton
+                v-if="canReceive"
+                label="Terima Barang"
+                icon="pi pi-inbox"
+                @click="receiveDialogVisible = true"
+              />
+              <BaseButton v-if="canCancel" label="Batalkan" icon="pi pi-times" variant="danger" @click="confirmCancel" />
+            </div>
+          </BaseCard>
+
+          <BaseCard>
+            <template #header>
+              <span class="po-detail__section-title">Item</span>
+            </template>
             <table class="po-detail__table">
+              <colgroup>
+                <col style="width: 32%">
+                <col style="width: 12%">
+                <col style="width: 12%">
+                <col style="width: 12%">
+                <col style="width: 16%">
+                <col style="width: 16%">
+              </colgroup>
               <thead>
                 <tr>
                   <th>Item</th>
                   <th>Satuan</th>
                   <th class="po-detail__col-num">Qty</th>
-                  <th class="po-detail__col-num">Harga</th>
-                  <th>No. Batch</th>
-                  <th>Kadaluarsa</th>
+                  <th class="po-detail__col-num">Diterima</th>
+                  <th class="po-detail__col-num">Harga Beli</th>
+                  <th class="po-detail__col-num">Subtotal</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="item in r.items" :key="item.id">
+                <tr v-for="item in po.items" :key="item.id">
                   <td>{{ item.itemName }}</td>
                   <td>{{ item.unitName }}</td>
                   <td class="po-detail__col-num">{{ item.quantity }}</td>
-                  <td class="po-detail__col-num">{{ formatCurrency(item.unitCost) }}</td>
-                  <td>{{ item.batchNumber }}</td>
-                  <td>{{ formatDate(item.expiredDate) }}</td>
+                  <td class="po-detail__col-num">{{ item.receivedQuantity }}</td>
+                  <td class="po-detail__col-num">{{ formatCurrency(item.unitPrice) }}</td>
+                  <td class="po-detail__col-num">{{ formatCurrency(item.quantity * item.unitPrice) }}</td>
                 </tr>
               </tbody>
             </table>
-          </div>
+          </BaseCard>
+
+          <BaseCard>
+            <template #header>
+              <span class="po-detail__section-title">Riwayat Penerimaan</span>
+            </template>
+            <p v-if="receipts.length === 0" class="po-detail__empty">Belum ada barang yang diterima.</p>
+            <div v-else class="po-detail__receipts">
+              <div v-for="r in receipts" :key="r.id" class="po-detail__receipt">
+                <div class="po-detail__receipt-head">
+                  <span class="po-detail__receipt-number">{{ r.receiptNumber }}</span>
+                  <span class="po-detail__receipt-date">{{ formatDateTime(r.receivedAt) }}</span>
+                </div>
+                <table class="po-detail__table">
+                  <colgroup>
+                    <col style="width: 26%">
+                    <col style="width: 12%">
+                    <col style="width: 10%">
+                    <col style="width: 16%">
+                    <col style="width: 18%">
+                    <col style="width: 18%">
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th>Satuan</th>
+                      <th class="po-detail__col-num">Qty</th>
+                      <th class="po-detail__col-num">Harga</th>
+                      <th>No. Batch</th>
+                      <th>Kadaluarsa</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="item in r.items" :key="item.id">
+                      <td>{{ item.itemName }}</td>
+                      <td>{{ item.unitName }}</td>
+                      <td class="po-detail__col-num">{{ item.quantity }}</td>
+                      <td class="po-detail__col-num">{{ formatCurrency(item.unitCost) }}</td>
+                      <td>{{ item.batchNumber }}</td>
+                      <td>{{ formatDate(item.expiredDate) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </BaseCard>
         </div>
-      </BaseCard>
+
+        <div class="po-detail__side">
+          <BaseCard>
+            <template #header>
+              <span class="po-detail__section-title">Informasi Supplier</span>
+            </template>
+            <div v-if="selectedSupplier" class="po-detail__supplier-preview">
+              <p><i class="pi pi-building" aria-hidden="true" /> {{ selectedSupplier.name }}</p>
+              <p><i class="pi pi-map-marker" aria-hidden="true" /> {{ selectedSupplier.address || '-' }}</p>
+              <p v-if="selectedSupplier.phone"><i class="pi pi-phone" aria-hidden="true" /> {{ selectedSupplier.phone }}</p>
+              <p v-if="selectedSupplier.email"><i class="pi pi-envelope" aria-hidden="true" /> {{ selectedSupplier.email }}</p>
+            </div>
+            <p v-else class="po-detail__empty">{{ po.supplierName }}</p>
+          </BaseCard>
+
+          <BaseCard>
+            <template #header>
+              <span class="po-detail__section-title">Ringkasan Biaya</span>
+            </template>
+            <div class="po-detail__total">
+              <span>Total</span>
+              <span class="po-detail__total-value">{{ formatCurrency(po.totalAmount) }}</span>
+            </div>
+          </BaseCard>
+        </div>
+      </div>
 
       <BaseDialog v-model:visible="receiveDialogVisible" header="Terima Barang">
         <GoodsReceiptForm
@@ -279,6 +327,31 @@ onMounted(load)
   color: var(--text);
 }
 
+.po-detail__grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.po-detail__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.po-detail__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+@media (max-width: 1023px) {
+  .po-detail__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .po-detail__header {
   display: flex;
   justify-content: space-between;
@@ -294,6 +367,21 @@ onMounted(load)
 
 .po-detail__supplier {
   color: var(--text-muted);
+}
+
+.po-detail__supplier-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+}
+
+.po-detail__supplier-preview p {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .po-detail__meta {
@@ -321,32 +409,49 @@ onMounted(load)
 
 .po-detail__table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: var(--font-sm);
 }
 
 .po-detail__table th {
   text-align: left;
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3);
+  height: 48px;
   font-weight: var(--font-weight-heading);
   color: var(--text-muted);
   border-bottom: 1px solid var(--surface-border);
+  white-space: nowrap;
 }
 
 .po-detail__table td {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3);
+  height: 44px;
+  border-bottom: 1px solid var(--surface-border);
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.po-detail__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.po-detail__table tbody tr:hover td {
+  background: var(--surface-hover);
 }
 
 .po-detail__col-num {
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .po-detail__total {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: var(--space-3);
   align-items: baseline;
-  padding-top: var(--space-3);
 }
 
 .po-detail__total-value {

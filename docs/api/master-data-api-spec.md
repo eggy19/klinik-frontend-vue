@@ -433,7 +433,7 @@ Request:
 
   "barcode": "8991234567890",
 
-  "manufacturer": "Kimia Farma",
+  "skuCode": "SKU-000123",
 
   "minimumStock": 50,
   "maximumStock": 1000,

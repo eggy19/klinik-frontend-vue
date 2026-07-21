@@ -2,13 +2,20 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { PaginationMeta } from '@/api/types'
 import { purchaseOrderApi } from '../api/purchase-order.api'
-import type { PurchaseOrder, PurchaseOrderInput, QueryPurchaseOrder } from '../types/purchase-order'
+import type {
+  PurchaseOrder,
+  PurchaseOrderInput,
+  PurchaseOrderStats,
+  QueryPurchaseOrder,
+} from '../types/purchase-order'
 
 export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
   const items = ref<PurchaseOrder[]>([])
   const loading = ref(false)
   const pagination = ref<PaginationMeta>({ page: 1, limit: 20, total: 0, totalPages: 0 })
   const lastQuery = ref<QueryPurchaseOrder>({})
+  const stats = ref<PurchaseOrderStats>({ totalActive: 0, pendingApproval: 0, monthlySpend: 0 })
+  const statsLoading = ref(false)
 
   async function fetchAll(query: QueryPurchaseOrder = {}) {
     loading.value = true
@@ -24,6 +31,15 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
 
   async function fetchOne(id: string) {
     return purchaseOrderApi.getById(id)
+  }
+
+  async function fetchStats() {
+    statsLoading.value = true
+    try {
+      stats.value = await purchaseOrderApi.getStats()
+    } finally {
+      statsLoading.value = false
+    }
   }
 
   async function create(input: PurchaseOrderInput) {
@@ -61,8 +77,11 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
     loading,
     pagination,
     lastQuery,
+    stats,
+    statsLoading,
     fetchAll,
     fetchOne,
+    fetchStats,
     create,
     update,
     submit,

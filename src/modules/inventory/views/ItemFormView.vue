@@ -141,7 +141,7 @@ onMounted(async () => {
         defaultUnitId: item.defaultUnitId,
         drugGroupId: item.drugGroupId,
         barcode: item.barcode,
-        manufacturer: item.manufacturer,
+        skuCode: item.skuCode,
         minimumStock: item.minimumStock,
         maximumStock: item.maximumStock,
         reorderPoint: item.reorderPoint,

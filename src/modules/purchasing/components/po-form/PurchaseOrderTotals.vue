@@ -22,11 +22,9 @@ const total = computed(() =>
 <style scoped>
 .po-totals {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: baseline;
   gap: var(--space-3);
-  padding: var(--space-3) 0;
-  border-top: 1px solid var(--surface-border);
 }
 
 .po-totals__label {

@@ -1,16 +1,19 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useConfirm } from 'primevue/useconfirm'
+import Tabs from 'primevue/tabs'
+import TabList from 'primevue/tablist'
+import Tab from 'primevue/tab'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
-import BaseSelect from '@/components/base/BaseSelect.vue'
+import BaseSummaryCard from '@/components/base/BaseSummaryCard.vue'
 import BaseDataTable, { type DataTableColumn } from '@/components/base/BaseDataTable.vue'
 import { useToastFeedback } from '@/composables/useToastFeedback'
 import { formatCurrency, formatDate } from '@/utils/format'
 import { usePurchaseOrderStore } from '../stores/purchase-order.store'
 import PurchaseOrderStatusTag from '../components/PurchaseOrderStatusTag.vue'
-import { PO_STATUS_LABELS, type PurchaseOrder, type PurchaseOrderStatus } from '../types/purchase-order'
+import type { PurchaseOrder, PurchaseOrderStatusGroup } from '../types/purchase-order'
 
 const router = useRouter()
 const store = usePurchaseOrderStore()
@@ -25,17 +28,39 @@ const columns: DataTableColumn[] = [
   { field: 'createdAt', header: 'Tanggal' },
 ]
 
-const statusFilter = ref<PurchaseOrderStatus | null>(null)
-const statusOptions = [
-  { label: 'Semua Status', value: null },
-  ...(Object.keys(PO_STATUS_LABELS) as PurchaseOrderStatus[]).map((s) => ({
-    label: PO_STATUS_LABELS[s],
-    value: s,
-  })),
-]
+type TabValue = 'draft' | 'active' | 'archive'
+
+const TAB_TO_GROUP: Record<TabValue, PurchaseOrderStatusGroup> = {
+  draft: 'DRAFT',
+  active: 'ACTIVE',
+  archive: 'ARCHIVE',
+}
+
+const TAB_EMPTY_TEXT: Record<TabValue, { title: string; description: string }> = {
+  draft: {
+    title: 'Belum ada draft PO',
+    description: 'Purchase order yang masih disimpan sebagai draft akan muncul di sini.',
+  },
+  active: {
+    title: 'Tidak ada PO aktif',
+    description: 'Purchase order yang sedang berjalan (diajukan, disetujui, atau sebagian diterima) akan muncul di sini.',
+  },
+  archive: {
+    title: 'Belum ada PO diarsipkan',
+    description: 'Purchase order yang sudah diterima penuh atau dibatalkan akan muncul di sini.',
+  },
+}
+
+const activeTab = ref<TabValue>('active')
+const emptyText = computed(() => TAB_EMPTY_TEXT[activeTab.value])
 
 function fetch(page = 1, limit = 20, search = '') {
-  store.fetchAll({ page, limit, search: search || undefined, status: statusFilter.value ?? undefined })
+  store.fetchAll({
+    page,
+    limit,
+    search: search || undefined,
+    statusGroup: TAB_TO_GROUP[activeTab.value],
+  })
 }
 
 function onPage(e: { page: number; rows: number }) {
@@ -46,7 +71,8 @@ function onSearch(term: string) {
   fetch(1, store.pagination.limit, term)
 }
 
-function onStatusFilterChange() {
+function onTabChange(value: string | number) {
+  activeTab.value = value as TabValue
   fetch(1, store.pagination.limit)
 }
 
@@ -99,7 +125,10 @@ async function doApprove(po: PurchaseOrder) {
   }
 }
 
-onMounted(() => fetch())
+onMounted(() => {
+  fetch()
+  store.fetchStats()
+})
 </script>
 
 <template>
@@ -108,7 +137,41 @@ onMounted(() => fetch())
       <h1 class="po-list__title">Purchase Order</h1>
     </div>
 
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <BaseSummaryCard
+        title="Total PO Aktif"
+        :value="store.stats.totalActive"
+        icon="pi pi-file"
+        variant="info"
+        :loading="store.statsLoading"
+      />
+      <BaseSummaryCard
+        title="PO Menunggu Approval"
+        :value="store.stats.pendingApproval"
+        icon="pi pi-clock"
+        variant="warning"
+        :loading="store.statsLoading"
+      />
+      <BaseSummaryCard
+        title="Belanja Bulan Ini"
+        :value="formatCurrency(store.stats.monthlySpend)"
+        icon="pi pi-wallet"
+        variant="success"
+        :loading="store.statsLoading"
+      />
+    </div>
+
     <BaseCard>
+      <div class="po-list__tabs">
+        <Tabs :value="activeTab" @update:value="onTabChange">
+          <TabList>
+            <Tab value="draft">Draft</Tab>
+            <Tab value="active">Aktif</Tab>
+            <Tab value="archive">Arsip</Tab>
+          </TabList>
+        </Tabs>
+      </div>
+
       <BaseDataTable
         :value="store.items"
         :columns="columns"
@@ -116,23 +179,11 @@ onMounted(() => fetch())
         lazy
         :total-records="store.pagination.total"
         search-placeholder="Cari No. PO..."
-        empty-title="Belum ada purchase order"
-        empty-description="Buat purchase order pertama untuk mulai memesan barang ke supplier."
+        :empty-title="emptyText.title"
+        :empty-description="emptyText.description"
         @page="onPage"
         @search="onSearch"
       >
-        <template #filters>
-          <BaseSelect
-            v-model="statusFilter"
-            :options="statusOptions"
-            option-label="label"
-            option-value="value"
-            placeholder="Semua Status"
-            show-clear
-            @update:model-value="onStatusFilterChange"
-          />
-        </template>
-
         <template #actions>
           <BaseButton label="Buat Purchase Order" icon="pi pi-plus" @click="goCreate" />
         </template>
@@ -179,5 +230,11 @@ onMounted(() => fetch())
 .po-list__title {
   font-size: var(--font-2xl);
   color: var(--text);
+}
+
+.po-list__tabs {
+  padding-bottom: var(--space-4);
+  margin-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border);
 }
 </style>

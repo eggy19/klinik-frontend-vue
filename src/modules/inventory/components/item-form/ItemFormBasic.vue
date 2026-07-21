@@ -63,10 +63,10 @@ watch(
       @update:model-value="form.barcode = $event as string"
     />
     <BaseInput
-      :model-value="form.manufacturer"
-      label="Manufacturer"
-      :error="errors.manufacturer"
-      @update:model-value="form.manufacturer = $event as string"
+      :model-value="form.skuCode"
+      label="Kode SKU"
+      :error="errors.skuCode"
+      @update:model-value="form.skuCode = $event as string"
     />
     <BaseSelect
       :model-value="form.itemTypeId"

@@ -9,6 +9,7 @@ import { useSupplierStore } from '@/modules/inventory/stores/supplier.store'
 import { useUnitStore } from '@/modules/inventory/stores/unit.store'
 import type { Item } from '@/modules/inventory/types/item'
 import { useToastFeedback } from '@/composables/useToastFeedback'
+import { formatDateTime } from '@/utils/format'
 import { usePurchaseOrderStore } from '../stores/purchase-order.store'
 import PurchaseOrderItemsTable from '../components/po-form/PurchaseOrderItemsTable.vue'
 import PurchaseOrderTotals from '../components/po-form/PurchaseOrderTotals.vue'
@@ -30,6 +31,15 @@ const errors = reactive<Record<string, string>>({})
 const submitting = ref(false)
 const loadingPo = ref(false)
 const supplierItems = ref<Item[]>([])
+
+// Data tampilan-saja untuk mode edit — bukan bagian dari form/PurchaseOrderInput
+// karena poNumber/createdAt dibuat server-side dan tidak pernah dikirim balik.
+const poNumber = ref<string | null>(null)
+const poCreatedAt = ref<string | null>(null)
+
+const selectedSupplier = computed(
+  () => supplierStore.items.find((s) => s.id === form.supplierId) ?? null,
+)
 
 function validate(): boolean {
   const e: Record<string, string> = {}
@@ -142,6 +152,8 @@ onMounted(async () => {
         router.push(`/inventory/purchase-orders/${id}`)
         return
       }
+      poNumber.value = po.poNumber
+      poCreatedAt.value = po.createdAt
       await loadSupplierItems(po.supplierId)
       Object.assign(form, {
         supplierId: po.supplierId,
@@ -173,41 +185,78 @@ onMounted(async () => {
     <div v-if="loadingPo" class="po-form-view__loading">Memuat data...</div>
 
     <template v-else>
-      <BaseCard>
-        <template #header>
-          <span class="po-form-view__section-title">Informasi Purchase Order</span>
-        </template>
-        <div class="po-form-view__header-fields">
-          <BaseSelect
-            v-model="form.supplierId"
-            :options="supplierStore.items"
-            option-label="name"
-            option-value="id"
-            label="Supplier"
-            placeholder="Pilih supplier..."
-            required
-            filter
-            :error="errors.supplierId"
-          />
-          <div class="po-form-view__note">
-            <label class="po-form-view__note-label" for="po-note">Catatan</label>
-            <textarea id="po-note" v-model="form.note" class="po-form-view__textarea" rows="2" />
-          </div>
-        </div>
-      </BaseCard>
+      <div class="po-form-view__grid">
+        <div class="po-form-view__main">
+          <BaseCard>
+            <template #header>
+              <span class="po-form-view__section-title">Informasi Supplier</span>
+            </template>
+            <div class="po-form-view__fields">
+              <BaseSelect
+                v-model="form.supplierId"
+                :options="supplierStore.items"
+                option-label="name"
+                option-value="id"
+                label="Supplier"
+                placeholder="Pilih supplier..."
+                required
+                filter
+                :error="errors.supplierId"
+              />
+              <div v-if="selectedSupplier" class="po-form-view__supplier-preview">
+                <p><i class="pi pi-map-marker" aria-hidden="true" /> {{ selectedSupplier.address || '-' }}</p>
+                <p v-if="selectedSupplier.phone"><i class="pi pi-phone" aria-hidden="true" /> {{ selectedSupplier.phone }}</p>
+                <p v-if="selectedSupplier.email"><i class="pi pi-envelope" aria-hidden="true" /> {{ selectedSupplier.email }}</p>
+              </div>
+            </div>
+          </BaseCard>
 
-      <BaseCard>
-        <template #header>
-          <span class="po-form-view__section-title">Item</span>
-        </template>
-        <PurchaseOrderItemsTable
-          :form="form"
-          :items="supplierItems"
-          :units="unitStore.items"
-          :errors="errors"
-        />
-        <PurchaseOrderTotals :items="form.items" />
-      </BaseCard>
+          <BaseCard>
+            <template #header>
+              <span class="po-form-view__section-title">Detail Transaksi</span>
+            </template>
+            <div class="po-form-view__fields">
+              <div v-if="isEditMode" class="po-form-view__meta">
+                <div>
+                  <span class="po-form-view__meta-label">Nomor PO</span>
+                  <span class="po-form-view__meta-value">{{ poNumber }}</span>
+                </div>
+                <div>
+                  <span class="po-form-view__meta-label">Tanggal Dibuat</span>
+                  <span class="po-form-view__meta-value">{{ formatDateTime(poCreatedAt) }}</span>
+                </div>
+              </div>
+              <p v-else class="po-form-view__hint">Nomor PO akan dibuat otomatis setelah disimpan.</p>
+
+              <div class="po-form-view__note">
+                <label class="po-form-view__note-label" for="po-note">Catatan</label>
+                <textarea id="po-note" v-model="form.note" class="po-form-view__textarea" rows="2" />
+              </div>
+            </div>
+          </BaseCard>
+
+          <BaseCard>
+            <template #header>
+              <span class="po-form-view__section-title">Item</span>
+            </template>
+            <PurchaseOrderItemsTable
+              :form="form"
+              :items="supplierItems"
+              :units="unitStore.items"
+              :errors="errors"
+            />
+          </BaseCard>
+        </div>
+
+        <div class="po-form-view__side">
+          <BaseCard>
+            <template #header>
+              <span class="po-form-view__section-title">Ringkasan Biaya</span>
+            </template>
+            <PurchaseOrderTotals :items="form.items" />
+          </BaseCard>
+        </div>
+      </div>
 
       <div class="po-form-view__footer">
         <BaseButton label="Batal" variant="ghost" @click="goBack" />
@@ -242,11 +291,77 @@ onMounted(async () => {
   color: var(--text);
 }
 
-.po-form-view__header-fields {
+.po-form-view__grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.po-form-view__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.po-form-view__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+@media (max-width: 1023px) {
+  .po-form-view__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.po-form-view__fields {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  max-width: 480px;
+}
+
+.po-form-view__supplier-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--surface-0);
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+}
+
+.po-form-view__supplier-preview p {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.po-form-view__meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-3);
+}
+
+.po-form-view__meta-label {
+  display: block;
+  font-size: var(--font-xs);
+  color: var(--text-muted);
+}
+
+.po-form-view__meta-value {
+  display: block;
+  color: var(--text);
+  font-weight: var(--font-weight-heading);
+}
+
+.po-form-view__hint {
+  margin: 0;
+  font-size: var(--font-sm);
+  color: var(--text-muted);
 }
 
 .po-form-view__note {
