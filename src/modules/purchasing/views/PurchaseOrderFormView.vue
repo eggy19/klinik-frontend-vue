@@ -90,7 +90,7 @@ async function onSaveDraft() {
     const id = await save()
     if (!id) return
     toast.success('Purchase order berhasil disimpan sebagai draft.')
-    router.push(`/inventory/purchase-orders/${id}`)
+    router.push(`/inventory/purchasing/purchase-orders/${id}`)
   } catch {
     toast.error()
   }
@@ -102,14 +102,14 @@ async function onSaveAndSubmit() {
     if (!id) return
     await store.submit(id)
     toast.success('Purchase order berhasil disimpan dan diajukan.')
-    router.push(`/inventory/purchase-orders/${id}`)
+    router.push(`/inventory/purchasing/purchase-orders/${id}`)
   } catch {
     toast.error()
   }
 }
 
 function goBack() {
-  router.push('/inventory/purchase-orders')
+  router.push('/inventory/purchasing/purchase-orders')
 }
 
 async function loadSupplierItems(supplierId: string) {
@@ -149,7 +149,7 @@ onMounted(async () => {
       const po = await store.fetchOne(id)
       if (po.status !== 'DRAFT') {
         toast.error('Hanya purchase order berstatus Draft yang dapat diedit.')
-        router.push(`/inventory/purchase-orders/${id}`)
+        router.push(`/inventory/purchasing/purchase-orders/${id}`)
         return
       }
       poNumber.value = po.poNumber
@@ -167,7 +167,7 @@ onMounted(async () => {
       })
     } catch {
       toast.error('Gagal memuat data purchase order.')
-      router.push('/inventory/purchase-orders')
+      router.push('/inventory/purchasing/purchase-orders')
     } finally {
       loadingPo.value = false
     }

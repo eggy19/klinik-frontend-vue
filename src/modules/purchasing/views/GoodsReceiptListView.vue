@@ -31,7 +31,7 @@ function onSearch(term: string) {
 }
 
 function goDetail(gr: GoodsReceipt) {
-  router.push(`/inventory/goods-receipts/${gr.id}`)
+  router.push(`/inventory/purchasing/goods-receipts/${gr.id}`)
 }
 
 onMounted(() => fetch())

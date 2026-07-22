@@ -54,18 +54,18 @@ async function load() {
     receipts.value = receiptData
   } catch {
     toast.error('Gagal memuat data purchase order.')
-    router.push('/inventory/purchase-orders')
+    router.push('/inventory/purchasing/purchase-orders')
   } finally {
     loading.value = false
   }
 }
 
 function goBack() {
-  router.push('/inventory/purchase-orders')
+  router.push('/inventory/purchasing/purchase-orders')
 }
 
 function goEdit() {
-  router.push(`/inventory/purchase-orders/${poId.value}/edit`)
+  router.push(`/inventory/purchasing/purchase-orders/${poId.value}/edit`)
 }
 
 async function doSubmit() {

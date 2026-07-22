@@ -77,15 +77,15 @@ function onTabChange(value: string | number) {
 }
 
 function goCreate() {
-  router.push('/inventory/purchase-orders/baru')
+  router.push('/inventory/purchasing/purchase-orders/baru')
 }
 
 function goDetail(po: PurchaseOrder) {
-  router.push(`/inventory/purchase-orders/${po.id}`)
+  router.push(`/inventory/purchasing/purchase-orders/${po.id}`)
 }
 
 function goEdit(po: PurchaseOrder) {
-  router.push(`/inventory/purchase-orders/${po.id}/edit`)
+  router.push(`/inventory/purchasing/purchase-orders/${po.id}/edit`)
 }
 
 async function doSubmit(po: PurchaseOrder) {

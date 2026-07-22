@@ -175,7 +175,7 @@ onMounted(() => {
           <BaseButton
             label="Tambah Item"
             icon="pi pi-plus"
-            @click="router.push('/inventory/obat/baru')"
+            @click="router.push('/inventory/master-data/obat/baru')"
           />
         </template>
 
@@ -208,7 +208,7 @@ onMounted(() => {
             variant="ghost"
             rounded
             aria-label="Edit"
-            @click="router.push(`/inventory/obat/${data.id}/edit`)"
+            @click="router.push(`/inventory/master-data/obat/${data.id}/edit`)"
           />
           <BaseButton
             :icon="data.isActive ? 'pi pi-ban' : 'pi pi-check-circle'"
@@ -232,7 +232,7 @@ onMounted(() => {
           <BaseButton
             label="Tambah Item"
             icon="pi pi-plus"
-            @click="router.push('/inventory/obat/baru')"
+            @click="router.push('/inventory/master-data/obat/baru')"
           />
         </template>
       </BaseDataTable>

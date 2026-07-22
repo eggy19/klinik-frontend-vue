@@ -16,11 +16,12 @@ const receipt = ref<GoodsReceipt | null>(null)
 const loading = ref(false)
 
 function goBack() {
-  router.push('/inventory/goods-receipts')
+  router.push('/inventory/purchasing/goods-receipts')
 }
 
 function goToPo() {
-  if (receipt.value) router.push(`/inventory/purchase-orders/${receipt.value.purchaseOrderId}`)
+  if (receipt.value)
+    router.push(`/inventory/purchasing/purchase-orders/${receipt.value.purchaseOrderId}`)
 }
 
 onMounted(async () => {
@@ -29,7 +30,7 @@ onMounted(async () => {
     receipt.value = await goodsReceiptApi.getById(route.params.id as string)
   } catch {
     toast.error('Gagal memuat data penerimaan barang.')
-    router.push('/inventory/goods-receipts')
+    router.push('/inventory/purchasing/goods-receipts')
   } finally {
     loading.value = false
   }

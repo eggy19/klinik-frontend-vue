@@ -91,7 +91,7 @@ async function onSubmit() {
     }
 
     toast.success(isEditMode.value ? 'Item berhasil diperbarui.' : 'Item berhasil ditambahkan.')
-    router.push('/inventory/obat')
+    router.push('/inventory/master-data/obat')
   } catch {
     toast.error()
   } finally {
@@ -100,7 +100,7 @@ async function onSubmit() {
 }
 
 function goBack() {
-  router.push('/inventory/obat')
+  router.push('/inventory/master-data/obat')
 }
 
 onMounted(async () => {
@@ -155,7 +155,7 @@ onMounted(async () => {
       })
     } catch {
       toast.error('Gagal memuat data item.')
-      router.push('/inventory/obat')
+      router.push('/inventory/master-data/obat')
     } finally {
       loadingItem.value = false
     }

@@ -16,21 +16,33 @@ export const navItems: NavItem[] = [
         label: 'Master Data',
         icon: 'pi pi-database',
         children: [
-          { label: 'Item', icon: 'pi pi-box', to: '/inventory/obat' },
-          { label: 'Kategori', icon: 'pi pi-tags', to: '/inventory/kategori' },
-          { label: 'Satuan', icon: 'pi pi-th-large', to: '/inventory/satuan' },
-          { label: 'Tipe Item', icon: 'pi pi-list', to: '/inventory/tipe-item' },
-          { label: 'Supplier', icon: 'pi pi-truck', to: '/inventory/supplier' },
-          { label: 'Golongan Obat', icon: 'pi pi-verified', to: '/inventory/golongan-obat' },
-          { label: 'Pengaturan Margin', icon: 'pi pi-percentage', to: '/inventory/margin' },
+          { label: 'Item', icon: 'pi pi-box', to: '/inventory/master-data/obat' },
+          { label: 'Kategori', icon: 'pi pi-tags', to: '/inventory/master-data/kategori' },
+          { label: 'Satuan', icon: 'pi pi-th-large', to: '/inventory/master-data/satuan' },
+          { label: 'Tipe Item', icon: 'pi pi-list', to: '/inventory/master-data/tipe-item' },
+          { label: 'Supplier', icon: 'pi pi-truck', to: '/inventory/master-data/supplier' },
+          {
+            label: 'Golongan Obat',
+            icon: 'pi pi-verified',
+            to: '/inventory/master-data/golongan-obat',
+          },
+          {
+            label: 'Pengaturan Margin',
+            icon: 'pi pi-percentage',
+            to: '/inventory/master-data/margin',
+          },
         ],
       },
       {
         label: 'Purchasing',
         icon: 'pi pi-shopping-cart',
         children: [
-          { label: 'Purchase Order', icon: 'pi pi-file-edit', to: '/inventory/purchase-orders' },
-          { label: 'Good Receipt', icon: 'pi pi-inbox', to: '/inventory/goods-receipts' },
+          {
+            label: 'Purchase Order',
+            icon: 'pi pi-file-edit',
+            to: '/inventory/purchasing/purchase-orders',
+          },
+          { label: 'Good Receipt', icon: 'pi pi-inbox', to: '/inventory/purchasing/goods-receipts' },
         ],
       },
       {
