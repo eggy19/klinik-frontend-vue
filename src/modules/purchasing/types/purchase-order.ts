@@ -75,7 +75,7 @@ export function emptyPurchaseOrder(): PurchaseOrderInput {
   return { supplierId: '', note: '', items: [] }
 }
 
-export type PurchaseOrderStatusGroup = 'DRAFT' | 'ACTIVE' | 'ARCHIVE'
+export type PurchaseOrderStatusGroup = 'DRAFT' | 'ACTIVE' | 'ARCHIVE' | 'RECEIVABLE'
 
 export interface PurchaseOrderStats {
   totalActive: number

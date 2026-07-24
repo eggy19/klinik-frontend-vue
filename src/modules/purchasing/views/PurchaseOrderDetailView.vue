@@ -4,7 +4,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { useConfirm } from 'primevue/useconfirm'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
-import BaseDialog from '@/components/base/BaseDialog.vue'
 import BaseDataTable, { type DataTableColumn } from '@/components/base/BaseDataTable.vue'
 import { useSupplierStore } from '@/modules/inventory/stores/supplier.store'
 import { useToastFeedback } from '@/composables/useToastFeedback'
@@ -13,9 +12,8 @@ import { usePurchaseOrderStore } from '../stores/purchase-order.store'
 import { useGoodsReceiptStore } from '../stores/goods-receipt.store'
 import PurchaseOrderStatusTag from '../components/PurchaseOrderStatusTag.vue'
 import GoodsReceiptStatusTag from '../components/GoodsReceiptStatusTag.vue'
-import GoodsReceiptForm from '../components/goods-receipt/GoodsReceiptForm.vue'
 import type { PurchaseOrder } from '../types/purchase-order'
-import type { GoodsReceipt, ReceiveGoodsInput } from '../types/goods-receipt'
+import type { GoodsReceipt } from '../types/goods-receipt'
 
 const route = useRoute()
 const router = useRouter()
@@ -28,17 +26,12 @@ const supplierStore = useSupplierStore()
 const po = ref<PurchaseOrder | null>(null)
 const receipts = ref<GoodsReceipt[]>([])
 const loading = ref(false)
-const receiveDialogVisible = ref(false)
-const receiving = ref(false)
 
 const poId = computed(() => route.params.id as string)
 const canEdit = computed(() => po.value?.status === 'DRAFT')
 const canSubmit = computed(() => po.value?.status === 'DRAFT')
 const canCancel = computed(() => po.value?.status === 'DRAFT')
 const canApprove = computed(() => po.value?.status === 'SUBMITTED')
-const canReceive = computed(
-  () => po.value?.status === 'APPROVED' || po.value?.status === 'PARTIALLY_RECEIVED',
-)
 
 const selectedSupplier = computed(
   () => supplierStore.items.find((s) => s.id === po.value?.supplierId) ?? null,
@@ -132,20 +125,6 @@ function confirmCancel() {
   })
 }
 
-async function onReceive(input: ReceiveGoodsInput) {
-  receiving.value = true
-  try {
-    const draft = await goodsReceiptStore.createDraft(poId.value, input)
-    receiveDialogVisible.value = false
-    toast.success('Draft penerimaan berhasil dibuat, silakan verifikasi.')
-    router.push(`/inventory/purchasing/goods-receipts/${draft.id}`)
-  } catch {
-    toast.error()
-  } finally {
-    receiving.value = false
-  }
-}
-
 onMounted(load)
 </script>
 
@@ -197,12 +176,6 @@ onMounted(load)
               <BaseButton v-if="canEdit" label="Edit" icon="pi pi-pencil" variant="secondary" @click="goEdit" />
               <BaseButton v-if="canSubmit" label="Submit" icon="pi pi-send" @click="doSubmit" />
               <BaseButton v-if="canApprove" label="Setujui" icon="pi pi-check" @click="doApprove" />
-              <BaseButton
-                v-if="canReceive"
-                label="Terima Barang"
-                icon="pi pi-inbox"
-                @click="receiveDialogVisible = true"
-              />
               <BaseButton v-if="canCancel" label="Batalkan" icon="pi pi-times" variant="danger" @click="confirmCancel" />
             </div>
           </BaseCard>
@@ -293,15 +266,6 @@ onMounted(load)
           </BaseCard>
         </div>
       </div>
-
-      <BaseDialog v-model:visible="receiveDialogVisible" header="Buat Draft Penerimaan Barang">
-        <GoodsReceiptForm
-          :po="po"
-          :submitting="receiving"
-          @submit="onReceive"
-          @cancel="receiveDialogVisible = false"
-        />
-      </BaseDialog>
     </template>
   </div>
 </template>

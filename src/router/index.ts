@@ -116,6 +116,12 @@ const routes: RouteRecordRaw[] = [
             meta: { title: 'Goods Receipt' },
           },
           {
+            path: 'goods-receipts/baru/:poId',
+            name: 'purchasing-gr-create',
+            component: () => import('@/modules/purchasing/views/GoodsReceiptCreateView.vue'),
+            meta: { title: 'Terima Barang' },
+          },
+          {
             path: 'goods-receipts/:id',
             name: 'purchasing-gr-detail',
             component: () => import('@/modules/purchasing/views/GoodsReceiptDetailView.vue'),
