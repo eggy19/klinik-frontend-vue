@@ -1,19 +1,28 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useConfirm } from 'primevue/useconfirm'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import { useToastFeedback } from '@/composables/useToastFeedback'
 import { formatCurrency, formatDate, formatDateTime } from '@/utils/format'
 import { goodsReceiptApi } from '../api/goods-receipt.api'
+import GoodsReceiptStatusTag from '../components/GoodsReceiptStatusTag.vue'
 import type { GoodsReceipt } from '../types/goods-receipt'
 
 const route = useRoute()
 const router = useRouter()
 const toast = useToastFeedback()
+const confirm = useConfirm()
 
 const receipt = ref<GoodsReceipt | null>(null)
 const loading = ref(false)
+const verifying = ref(false)
+const deleting = ref(false)
+
+const grId = computed(() => route.params.id as string)
+const canVerify = computed(() => receipt.value?.status === 'DRAFT')
+const canDelete = computed(() => receipt.value?.status === 'DRAFT')
 
 function goBack() {
   router.push('/inventory/purchasing/goods-receipts')
@@ -24,17 +33,64 @@ function goToPo() {
     router.push(`/inventory/purchasing/purchase-orders/${receipt.value.purchaseOrderId}`)
 }
 
-onMounted(async () => {
+async function load() {
   loading.value = true
   try {
-    receipt.value = await goodsReceiptApi.getById(route.params.id as string)
+    receipt.value = await goodsReceiptApi.getById(grId.value)
   } catch {
     toast.error('Gagal memuat data penerimaan barang.')
     router.push('/inventory/purchasing/goods-receipts')
   } finally {
     loading.value = false
   }
-})
+}
+
+function confirmVerify() {
+  confirm.require({
+    header: 'Verifikasi Penerimaan Barang',
+    message: `Verifikasi ${receipt.value?.receiptNumber}? Stok akan langsung masuk ke inventory dan tindakan ini tidak dapat dibatalkan.`,
+    icon: 'pi pi-exclamation-triangle',
+    rejectLabel: 'Tutup',
+    acceptLabel: 'Verifikasi & Posting',
+    accept: async () => {
+      verifying.value = true
+      try {
+        await goodsReceiptApi.verify(grId.value)
+        toast.success('Penerimaan barang berhasil diverifikasi dan stok telah masuk.')
+        await load()
+      } catch {
+        toast.error()
+      } finally {
+        verifying.value = false
+      }
+    },
+  })
+}
+
+function confirmDelete() {
+  confirm.require({
+    header: 'Hapus Draft Penerimaan',
+    message: `Hapus draft ${receipt.value?.receiptNumber}? Data yang sudah diisi akan hilang.`,
+    icon: 'pi pi-exclamation-triangle',
+    rejectLabel: 'Tutup',
+    acceptLabel: 'Hapus Draft',
+    acceptProps: { severity: 'danger' },
+    accept: async () => {
+      deleting.value = true
+      try {
+        await goodsReceiptApi.deleteDraft(grId.value)
+        toast.success('Draft penerimaan berhasil dihapus.')
+        if (receipt.value) router.push(`/inventory/purchasing/purchase-orders/${receipt.value.purchaseOrderId}`)
+      } catch {
+        toast.error()
+      } finally {
+        deleting.value = false
+      }
+    },
+  })
+}
+
+onMounted(load)
 </script>
 
 <template>
@@ -50,7 +106,10 @@ onMounted(async () => {
       <BaseCard>
         <div class="gr-detail__header">
           <div>
-            <div class="gr-detail__number">{{ receipt.receiptNumber }}</div>
+            <div class="gr-detail__number">
+              {{ receipt.receiptNumber }}
+              <GoodsReceiptStatusTag :status="receipt.status" />
+            </div>
             <div class="gr-detail__supplier">{{ receipt.supplierName }}</div>
           </div>
           <BaseButton :label="`PO ${receipt.poNumber}`" icon="pi pi-file" variant="secondary" @click="goToPo" />
@@ -60,11 +119,32 @@ onMounted(async () => {
             <dt>Tanggal Diterima</dt>
             <dd>{{ formatDateTime(receipt.receivedAt) }}</dd>
           </div>
+          <div v-if="receipt.verifiedAt">
+            <dt>Tanggal Diverifikasi</dt>
+            <dd>{{ formatDateTime(receipt.verifiedAt) }}</dd>
+          </div>
           <div v-if="receipt.note">
             <dt>Catatan</dt>
             <dd>{{ receipt.note }}</dd>
           </div>
         </dl>
+        <div v-if="canVerify || canDelete" class="gr-detail__actions">
+          <BaseButton
+            v-if="canVerify"
+            label="Verifikasi & Posting"
+            icon="pi pi-check"
+            :loading="verifying"
+            @click="confirmVerify"
+          />
+          <BaseButton
+            v-if="canDelete"
+            label="Hapus Draft"
+            icon="pi pi-trash"
+            variant="danger"
+            :loading="deleting"
+            @click="confirmDelete"
+          />
+        </div>
       </BaseCard>
 
       <BaseCard>
@@ -130,6 +210,9 @@ onMounted(async () => {
 }
 
 .gr-detail__number {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: var(--font-xl);
   font-weight: var(--font-weight-heading);
   color: var(--text);
@@ -154,6 +237,13 @@ onMounted(async () => {
 .gr-detail__meta dd {
   margin: 0;
   color: var(--text);
+}
+
+.gr-detail__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-top: var(--space-4);
 }
 
 .gr-detail__table {

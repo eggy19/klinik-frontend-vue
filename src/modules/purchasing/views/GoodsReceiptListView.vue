@@ -6,6 +6,7 @@ import BaseButton from '@/components/base/BaseButton.vue'
 import BaseDataTable, { type DataTableColumn } from '@/components/base/BaseDataTable.vue'
 import { formatDateTime } from '@/utils/format'
 import { useGoodsReceiptStore } from '../stores/goods-receipt.store'
+import GoodsReceiptStatusTag from '../components/GoodsReceiptStatusTag.vue'
 import type { GoodsReceipt } from '../types/goods-receipt'
 
 const router = useRouter()
@@ -15,6 +16,7 @@ const columns: DataTableColumn[] = [
   { field: 'receiptNumber', header: 'No. Penerimaan' },
   { field: 'poNumber', header: 'No. PO' },
   { field: 'supplierName', header: 'Supplier' },
+  { field: 'status', header: 'Status' },
   { field: 'receivedAt', header: 'Tanggal Diterima' },
 ]
 
@@ -56,6 +58,10 @@ onMounted(() => fetch())
         @page="onPage"
         @search="onSearch"
       >
+        <template #cell-status="{ data }">
+          <GoodsReceiptStatusTag :status="data.status" />
+        </template>
+
         <template #cell-receivedAt="{ data }">
           {{ formatDateTime(data.receivedAt) }}
         </template>

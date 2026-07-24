@@ -24,9 +24,17 @@ export const useGoodsReceiptStore = defineStore('goodsReceipt', () => {
     return goodsReceiptApi.listForPurchaseOrder(poId)
   }
 
-  async function receive(poId: string, input: ReceiveGoodsInput) {
-    return goodsReceiptApi.receive(poId, input)
+  async function createDraft(poId: string, input: ReceiveGoodsInput) {
+    return goodsReceiptApi.createDraft(poId, input)
   }
 
-  return { items, loading, pagination, fetchAll, fetchForPo, receive }
+  async function verify(id: string) {
+    return goodsReceiptApi.verify(id)
+  }
+
+  async function deleteDraft(id: string) {
+    return goodsReceiptApi.deleteDraft(id)
+  }
+
+  return { items, loading, pagination, fetchAll, fetchForPo, createDraft, verify, deleteDraft }
 })

@@ -1,4 +1,16 @@
-import type { PurchaseOrderItem } from './purchase-order'
+import type { PurchaseOrderItem, TagVariant } from './purchase-order'
+
+export type GoodsReceiptStatus = 'DRAFT' | 'VERIFIED'
+
+export const GR_STATUS_LABELS: Record<GoodsReceiptStatus, string> = {
+  DRAFT: 'Draft',
+  VERIFIED: 'Terverifikasi',
+}
+
+export const GR_STATUS_VARIANT: Record<GoodsReceiptStatus, TagVariant> = {
+  DRAFT: 'secondary',
+  VERIFIED: 'success',
+}
 
 export interface GoodsReceiptItem {
   id: string
@@ -21,7 +33,9 @@ export interface GoodsReceipt {
   poNumber: string
   supplierName: string
   receiptNumber: string
+  status: GoodsReceiptStatus
   receivedAt: string
+  verifiedAt: string | null
   note: string
   items: GoodsReceiptItem[]
 }

@@ -1,6 +1,12 @@
 import { apiClient } from '@/api/client'
 import type { ApiResponse, PaginationMeta } from '@/api/types'
-import type { GoodsReceipt, GoodsReceiptItem, QueryGoodsReceipt, ReceiveGoodsInput } from '../types/goods-receipt'
+import type {
+  GoodsReceipt,
+  GoodsReceiptItem,
+  GoodsReceiptStatus,
+  QueryGoodsReceipt,
+  ReceiveGoodsInput,
+} from '../types/goods-receipt'
 
 interface ApiPaginatedResponse<T> extends ApiResponse<T> {
   pagination: PaginationMeta
@@ -28,7 +34,9 @@ interface ApiGoodsReceipt {
     supplier?: { id: string; supplierName: string }
   }
   receiptNumber: string
+  status: GoodsReceiptStatus
   receivedAt: string
+  verifiedAt: string | null
   note: string | null
   items?: ApiGoodsReceiptItem[]
 }
@@ -62,7 +70,9 @@ function fromApi(raw: ApiGoodsReceipt): GoodsReceipt {
     poNumber: raw.purchaseOrder?.poNumber ?? '',
     supplierName: raw.purchaseOrder?.supplier?.supplierName ?? '',
     receiptNumber: raw.receiptNumber,
+    status: raw.status,
     receivedAt: raw.receivedAt,
+    verifiedAt: raw.verifiedAt,
     note: raw.note ?? '',
     items: (raw.items ?? []).map(fromApiItem),
   }
@@ -107,11 +117,22 @@ export const goodsReceiptApi = {
     return res.data.data.map(fromApi)
   },
 
-  async receive(poId: string, input: ReceiveGoodsInput): Promise<GoodsReceipt> {
+  async createDraft(poId: string, input: ReceiveGoodsInput): Promise<GoodsReceipt> {
     const res = await apiClient.post<ApiResponse<ApiGoodsReceipt>>(
       `/inventory/purchase-orders/${poId}/goods-receipt`,
       toReceivePayload(input),
     )
     return fromApi(res.data.data)
+  },
+
+  async verify(id: string): Promise<GoodsReceipt> {
+    const res = await apiClient.post<ApiResponse<ApiGoodsReceipt>>(
+      `/inventory/goods-receipts/${id}/verify`,
+    )
+    return fromApi(res.data.data)
+  },
+
+  async deleteDraft(id: string): Promise<void> {
+    await apiClient.delete<ApiResponse<null>>(`/inventory/goods-receipts/${id}`)
   },
 }

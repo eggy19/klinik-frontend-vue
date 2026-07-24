@@ -36,6 +36,12 @@ const props = withDefaults(
     totalRecords?: number
     /** Sembunyikan kotak pencarian (mis. lazy table tanpa dukungan search backend). */
     showSearch?: boolean
+    /** Sembunyikan MultiSelect kolom (mis. tabel presentational sederhana). */
+    showColumnToggle?: boolean
+    /** Sembunyikan tombol Export CSV. */
+    showExport?: boolean
+    /** Matikan paginator (mis. tabel read-only tanpa banyak baris). */
+    paginator?: boolean
   }>(),
   {
     loading: false,
@@ -46,6 +52,9 @@ const props = withDefaults(
     lazy: false,
     totalRecords: 0,
     showSearch: true,
+    showColumnToggle: true,
+    showExport: true,
+    paginator: true,
   },
 )
 
@@ -109,6 +118,7 @@ const hasRowActions = computed(() => !!slots['row-actions'])
 
       <div class="base-table__tools">
         <MultiSelect
+          v-if="showColumnToggle"
           v-model="visibleColumns"
           :options="columns"
           option-label="header"
@@ -120,7 +130,7 @@ const hasRowActions = computed(() => !!slots['row-actions'])
           data-key="field"
         />
         <Button
-          v-if="!lazy"
+          v-if="showExport && !lazy"
           icon="pi pi-download"
           label="Export CSV"
           severity="secondary"
@@ -167,7 +177,7 @@ const hasRowActions = computed(() => !!slots['row-actions'])
       :value="filteredRows"
       :rows="rows"
       :rows-per-page-options="[10, 20, 30, 50]"
-      paginator
+      :paginator="paginator"
       :lazy="lazy"
       :total-records="lazy ? totalRecords : undefined"
       removable-sort

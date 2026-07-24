@@ -5,12 +5,14 @@ import { useConfirm } from 'primevue/useconfirm'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseDialog from '@/components/base/BaseDialog.vue'
+import BaseDataTable, { type DataTableColumn } from '@/components/base/BaseDataTable.vue'
 import { useSupplierStore } from '@/modules/inventory/stores/supplier.store'
 import { useToastFeedback } from '@/composables/useToastFeedback'
 import { formatCurrency, formatDate, formatDateTime } from '@/utils/format'
 import { usePurchaseOrderStore } from '../stores/purchase-order.store'
 import { useGoodsReceiptStore } from '../stores/goods-receipt.store'
 import PurchaseOrderStatusTag from '../components/PurchaseOrderStatusTag.vue'
+import GoodsReceiptStatusTag from '../components/GoodsReceiptStatusTag.vue'
 import GoodsReceiptForm from '../components/goods-receipt/GoodsReceiptForm.vue'
 import type { PurchaseOrder } from '../types/purchase-order'
 import type { GoodsReceipt, ReceiveGoodsInput } from '../types/goods-receipt'
@@ -41,6 +43,28 @@ const canReceive = computed(
 const selectedSupplier = computed(
   () => supplierStore.items.find((s) => s.id === po.value?.supplierId) ?? null,
 )
+
+const poItemColumns: DataTableColumn[] = [
+  { field: 'itemName', header: 'Item', sortable: false },
+  { field: 'unitName', header: 'Satuan', sortable: false },
+  { field: 'quantity', header: 'Qty', sortable: false },
+  { field: 'receivedQuantity', header: 'Diterima', sortable: false },
+  { field: 'unitPrice', header: 'Harga Beli', sortable: false },
+  { field: 'subtotal', header: 'Subtotal', sortable: false },
+]
+
+const poItemRows = computed(() =>
+  (po.value?.items ?? []).map((item) => ({ ...item, subtotal: item.quantity * item.unitPrice })),
+)
+
+const receiptItemColumns: DataTableColumn[] = [
+  { field: 'itemName', header: 'Item', sortable: false },
+  { field: 'unitName', header: 'Satuan', sortable: false },
+  { field: 'quantity', header: 'Qty', sortable: false },
+  { field: 'unitCost', header: 'Harga', sortable: false },
+  { field: 'batchNumber', header: 'No. Batch', sortable: false },
+  { field: 'expiredDate', header: 'Kadaluarsa', sortable: false },
+]
 
 async function load() {
   loading.value = true
@@ -111,10 +135,10 @@ function confirmCancel() {
 async function onReceive(input: ReceiveGoodsInput) {
   receiving.value = true
   try {
-    await goodsReceiptStore.receive(poId.value, input)
+    const draft = await goodsReceiptStore.createDraft(poId.value, input)
     receiveDialogVisible.value = false
-    toast.success('Barang berhasil diterima.')
-    await load()
+    toast.success('Draft penerimaan berhasil dibuat, silakan verifikasi.')
+    router.push(`/inventory/purchasing/goods-receipts/${draft.id}`)
   } catch {
     toast.error()
   } finally {
@@ -185,81 +209,54 @@ onMounted(load)
 
           <BaseCard>
             <template #header>
-              <span class="po-detail__section-title">Item</span>
+              <span class="po-detail__section-title">
+                <i class="pi pi-box" aria-hidden="true" />
+                Item
+              </span>
             </template>
-            <table class="po-detail__table">
-              <colgroup>
-                <col style="width: 32%">
-                <col style="width: 12%">
-                <col style="width: 12%">
-                <col style="width: 12%">
-                <col style="width: 16%">
-                <col style="width: 16%">
-              </colgroup>
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th>Satuan</th>
-                  <th class="po-detail__col-num">Qty</th>
-                  <th class="po-detail__col-num">Diterima</th>
-                  <th class="po-detail__col-num">Harga Beli</th>
-                  <th class="po-detail__col-num">Subtotal</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="item in po.items" :key="item.id">
-                  <td>{{ item.itemName }}</td>
-                  <td>{{ item.unitName }}</td>
-                  <td class="po-detail__col-num">{{ item.quantity }}</td>
-                  <td class="po-detail__col-num">{{ item.receivedQuantity }}</td>
-                  <td class="po-detail__col-num">{{ formatCurrency(item.unitPrice) }}</td>
-                  <td class="po-detail__col-num">{{ formatCurrency(item.quantity * item.unitPrice) }}</td>
-                </tr>
-              </tbody>
-            </table>
+            <BaseDataTable
+              :value="poItemRows"
+              :columns="poItemColumns"
+              :show-search="false"
+              :show-column-toggle="false"
+              :show-export="false"
+              :paginator="false"
+              empty-title="Belum ada item"
+            >
+              <template #cell-unitPrice="{ value }">{{ formatCurrency(value as number) }}</template>
+              <template #cell-subtotal="{ value }">{{ formatCurrency(value as number) }}</template>
+            </BaseDataTable>
           </BaseCard>
 
           <BaseCard>
             <template #header>
-              <span class="po-detail__section-title">Riwayat Penerimaan</span>
+              <span class="po-detail__section-title">
+                <i class="pi pi-history" aria-hidden="true" />
+                Riwayat Penerimaan
+              </span>
             </template>
             <p v-if="receipts.length === 0" class="po-detail__empty">Belum ada barang yang diterima.</p>
             <div v-else class="po-detail__receipts">
               <div v-for="r in receipts" :key="r.id" class="po-detail__receipt">
                 <div class="po-detail__receipt-head">
-                  <span class="po-detail__receipt-number">{{ r.receiptNumber }}</span>
+                  <span class="po-detail__receipt-number">
+                    {{ r.receiptNumber }}
+                    <GoodsReceiptStatusTag :status="r.status" />
+                  </span>
                   <span class="po-detail__receipt-date">{{ formatDateTime(r.receivedAt) }}</span>
                 </div>
-                <table class="po-detail__table">
-                  <colgroup>
-                    <col style="width: 26%">
-                    <col style="width: 12%">
-                    <col style="width: 10%">
-                    <col style="width: 16%">
-                    <col style="width: 18%">
-                    <col style="width: 18%">
-                  </colgroup>
-                  <thead>
-                    <tr>
-                      <th>Item</th>
-                      <th>Satuan</th>
-                      <th class="po-detail__col-num">Qty</th>
-                      <th class="po-detail__col-num">Harga</th>
-                      <th>No. Batch</th>
-                      <th>Kadaluarsa</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="item in r.items" :key="item.id">
-                      <td>{{ item.itemName }}</td>
-                      <td>{{ item.unitName }}</td>
-                      <td class="po-detail__col-num">{{ item.quantity }}</td>
-                      <td class="po-detail__col-num">{{ formatCurrency(item.unitCost) }}</td>
-                      <td>{{ item.batchNumber }}</td>
-                      <td>{{ formatDate(item.expiredDate) }}</td>
-                    </tr>
-                  </tbody>
-                </table>
+                <BaseDataTable
+                  :value="r.items"
+                  :columns="receiptItemColumns"
+                  :show-search="false"
+                  :show-column-toggle="false"
+                  :show-export="false"
+                  :paginator="false"
+                  empty-title="Belum ada item"
+                >
+                  <template #cell-unitCost="{ value }">{{ formatCurrency(value as number) }}</template>
+                  <template #cell-expiredDate="{ value }">{{ formatDate(value as string | null) }}</template>
+                </BaseDataTable>
               </div>
             </div>
           </BaseCard>
@@ -268,7 +265,10 @@ onMounted(load)
         <div class="po-detail__side">
           <BaseCard>
             <template #header>
-              <span class="po-detail__section-title">Informasi Supplier</span>
+              <span class="po-detail__section-title">
+                <i class="pi pi-truck" aria-hidden="true" />
+                Informasi Supplier
+              </span>
             </template>
             <div v-if="selectedSupplier" class="po-detail__supplier-preview">
               <p><i class="pi pi-building" aria-hidden="true" /> {{ selectedSupplier.name }}</p>
@@ -281,7 +281,10 @@ onMounted(load)
 
           <BaseCard>
             <template #header>
-              <span class="po-detail__section-title">Ringkasan Biaya</span>
+              <span class="po-detail__section-title">
+                <i class="pi pi-wallet" aria-hidden="true" />
+                Ringkasan Biaya
+              </span>
             </template>
             <div class="po-detail__total">
               <span>Total</span>
@@ -291,7 +294,7 @@ onMounted(load)
         </div>
       </div>
 
-      <BaseDialog v-model:visible="receiveDialogVisible" header="Terima Barang">
+      <BaseDialog v-model:visible="receiveDialogVisible" header="Buat Draft Penerimaan Barang">
         <GoodsReceiptForm
           :po="po"
           :submitting="receiving"
@@ -322,9 +325,16 @@ onMounted(load)
 }
 
 .po-detail__section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: var(--font-base);
   font-weight: var(--font-weight-heading);
   color: var(--text);
+}
+
+.po-detail__section-title .pi {
+  color: var(--text-muted);
 }
 
 .po-detail__grid {
@@ -366,7 +376,9 @@ onMounted(load)
 }
 
 .po-detail__supplier {
-  color: var(--text-muted);
+  font-size: var(--font-lg);
+  font-weight: var(--font-weight-heading);
+  color: var(--text);
 }
 
 .po-detail__supplier-preview {
@@ -405,46 +417,6 @@ onMounted(load)
   display: flex;
   gap: var(--space-2);
   flex-wrap: wrap;
-}
-
-.po-detail__table {
-  width: 100%;
-  table-layout: fixed;
-  border-collapse: collapse;
-  font-size: var(--font-sm);
-}
-
-.po-detail__table th {
-  text-align: left;
-  padding: var(--space-3);
-  height: 48px;
-  font-weight: var(--font-weight-heading);
-  color: var(--text-muted);
-  border-bottom: 1px solid var(--surface-border);
-  white-space: nowrap;
-}
-
-.po-detail__table td {
-  padding: var(--space-3);
-  height: 44px;
-  border-bottom: 1px solid var(--surface-border);
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.po-detail__table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.po-detail__table tbody tr:hover td {
-  background: var(--surface-hover);
-}
-
-.po-detail__col-num {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
 }
 
 .po-detail__total {

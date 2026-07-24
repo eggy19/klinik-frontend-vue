@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseSelect from '@/components/base/BaseSelect.vue'
+import BaseDialog from '@/components/base/BaseDialog.vue'
 import { itemApi } from '@/modules/inventory/api/item.api'
 import { useSupplierStore } from '@/modules/inventory/stores/supplier.store'
 import { useUnitStore } from '@/modules/inventory/stores/unit.store'
@@ -12,8 +13,14 @@ import { useToastFeedback } from '@/composables/useToastFeedback'
 import { formatDateTime } from '@/utils/format'
 import { usePurchaseOrderStore } from '../stores/purchase-order.store'
 import PurchaseOrderItemsTable from '../components/po-form/PurchaseOrderItemsTable.vue'
+import PurchaseOrderItemForm from '../components/po-form/PurchaseOrderItemForm.vue'
 import PurchaseOrderTotals from '../components/po-form/PurchaseOrderTotals.vue'
-import { emptyPurchaseOrder, type PurchaseOrderInput } from '../types/purchase-order'
+import {
+  emptyPurchaseOrder,
+  emptyPurchaseOrderItem,
+  type PurchaseOrderInput,
+  type PurchaseOrderItemInput,
+} from '../types/purchase-order'
 
 const route = useRoute()
 const router = useRouter()
@@ -37,9 +44,51 @@ const supplierItems = ref<Item[]>([])
 const poNumber = ref<string | null>(null)
 const poCreatedAt = ref<string | null>(null)
 
+// State dialog modal Tambah/Edit item — form detail (satuan, qty, harga)
+// diisi di dalam modal, tabel PO hanya menampilkan baris read-only.
+const itemDialogVisible = ref(false)
+const editingItemIndex = ref<number | null>(null)
+const itemFormInitial = ref<PurchaseOrderItemInput>(emptyPurchaseOrderItem())
+// Fallback nama item untuk baris PO existing yang item-nya sudah di-unlink
+// dari supplier setelah draft dibuat (supplierItems tidak lagi memuatnya).
+const itemNameFallbacks = ref<Record<string, { itemCode: string; itemName: string }>>({})
+
+const itemDialogHeader = computed(() => (editingItemIndex.value === null ? 'Tambah Item' : 'Edit Item'))
+const existingItemKeys = computed(() =>
+  form.items
+    .filter((_, i) => i !== editingItemIndex.value)
+    .map((r) => `${r.itemId}:${r.unitId}`),
+)
+
 const selectedSupplier = computed(
   () => supplierStore.items.find((s) => s.id === form.supplierId) ?? null,
 )
+
+function openAddItem() {
+  editingItemIndex.value = null
+  itemFormInitial.value = emptyPurchaseOrderItem()
+  itemDialogVisible.value = true
+}
+
+function openEditItem(index: number) {
+  editingItemIndex.value = index
+  itemFormInitial.value = { ...form.items[index] }
+  itemDialogVisible.value = true
+}
+
+function onItemSubmit(input: PurchaseOrderItemInput) {
+  if (editingItemIndex.value === null) {
+    form.items.push(input)
+  } else {
+    form.items[editingItemIndex.value] = input
+  }
+  delete errors.items
+  itemDialogVisible.value = false
+}
+
+function removeItem(index: number) {
+  form.items.splice(index, 1)
+}
 
 function validate(): boolean {
   const e: Record<string, string> = {}
@@ -47,12 +96,8 @@ function validate(): boolean {
   if (form.items.length === 0) {
     e.items = 'Tambahkan minimal satu item.'
   } else {
-    form.items.forEach((row, i) => {
-      if (!row.itemId) e[`items.${i}.itemId`] = 'Item wajib dipilih.'
-      if (!row.unitId) e[`items.${i}.unitId`] = 'Satuan wajib dipilih.'
-      if (row.quantity <= 0) e[`items.${i}.quantity`] = 'Qty harus lebih dari 0.'
-      if (row.unitPrice < 0) e[`items.${i}.unitPrice`] = 'Harga tidak boleh negatif.'
-    })
+    // Validitas per-baris sudah dijamin oleh modal PurchaseOrderItemForm —
+    // di sini cukup safety net terhadap duplikat item:satuan.
     const seen = new Set<string>()
     for (const row of form.items) {
       const key = `${row.itemId}:${row.unitId}`
@@ -155,6 +200,9 @@ onMounted(async () => {
       poNumber.value = po.poNumber
       poCreatedAt.value = po.createdAt
       await loadSupplierItems(po.supplierId)
+      itemNameFallbacks.value = Object.fromEntries(
+        po.items.map((i) => [i.itemId, { itemCode: i.itemCode, itemName: i.itemName }]),
+      )
       Object.assign(form, {
         supplierId: po.supplierId,
         note: po.note,
@@ -189,7 +237,10 @@ onMounted(async () => {
         <div class="po-form-view__main">
           <BaseCard>
             <template #header>
-              <span class="po-form-view__section-title">Informasi Supplier</span>
+              <span class="po-form-view__section-title">
+                <i class="pi pi-truck" aria-hidden="true" />
+                Informasi Supplier
+              </span>
             </template>
             <div class="po-form-view__fields">
               <BaseSelect
@@ -213,7 +264,10 @@ onMounted(async () => {
 
           <BaseCard>
             <template #header>
-              <span class="po-form-view__section-title">Detail Transaksi</span>
+              <span class="po-form-view__section-title">
+                <i class="pi pi-file-edit" aria-hidden="true" />
+                Detail Transaksi
+              </span>
             </template>
             <div class="po-form-view__fields">
               <div v-if="isEditMode" class="po-form-view__meta">
@@ -237,13 +291,21 @@ onMounted(async () => {
 
           <BaseCard>
             <template #header>
-              <span class="po-form-view__section-title">Item</span>
+              <span class="po-form-view__section-title">
+                <i class="pi pi-box" aria-hidden="true" />
+                Item Entry
+              </span>
             </template>
             <PurchaseOrderItemsTable
-              :form="form"
-              :items="supplierItems"
+              :rows="form.items"
+              :supplier-items="supplierItems"
               :units="unitStore.items"
-              :errors="errors"
+              :supplier-selected="!!form.supplierId"
+              :error="errors.items"
+              :fallback-names="itemNameFallbacks"
+              @add="openAddItem"
+              @edit="openEditItem"
+              @remove="removeItem"
             />
           </BaseCard>
         </div>
@@ -251,12 +313,27 @@ onMounted(async () => {
         <div class="po-form-view__side">
           <BaseCard>
             <template #header>
-              <span class="po-form-view__section-title">Ringkasan Biaya</span>
+              <span class="po-form-view__section-title">
+                <i class="pi pi-wallet" aria-hidden="true" />
+                Ringkasan Biaya
+              </span>
             </template>
             <PurchaseOrderTotals :items="form.items" />
           </BaseCard>
         </div>
       </div>
+
+      <BaseDialog v-model:visible="itemDialogVisible" :header="itemDialogHeader">
+        <PurchaseOrderItemForm
+          :initial="itemFormInitial"
+          :items="supplierItems"
+          :units="unitStore.items"
+          :existing-keys="existingItemKeys"
+          :mode="editingItemIndex === null ? 'add' : 'edit'"
+          @submit="onItemSubmit"
+          @cancel="itemDialogVisible = false"
+        />
+      </BaseDialog>
 
       <div class="po-form-view__footer">
         <BaseButton label="Batal" variant="ghost" @click="goBack" />
@@ -286,9 +363,16 @@ onMounted(async () => {
 }
 
 .po-form-view__section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: var(--font-base);
   font-weight: var(--font-weight-heading);
   color: var(--text);
+}
+
+.po-form-view__section-title .pi {
+  color: var(--text-muted);
 }
 
 .po-form-view__grid {

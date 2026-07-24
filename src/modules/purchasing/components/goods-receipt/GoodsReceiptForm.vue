@@ -158,7 +158,7 @@ onMounted(async () => {
     <div class="gr-form__footer">
       <BaseButton label="Batal" variant="ghost" @click="emit('cancel')" />
       <BaseButton
-        label="Terima Barang"
+        label="Simpan Draft"
         :loading="submitting"
         :disabled="rows.length === 0"
         @click="onSubmit"
