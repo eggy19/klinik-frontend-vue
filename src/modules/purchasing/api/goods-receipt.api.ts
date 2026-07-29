@@ -1,6 +1,7 @@
 import { apiClient } from '@/api/client'
 import type { ApiResponse, PaginationMeta } from '@/api/types'
 import type {
+  DiscountType,
   GoodsReceipt,
   GoodsReceiptItem,
   GoodsReceiptStatus,
@@ -23,6 +24,11 @@ interface ApiGoodsReceiptItem {
   expiredDate: string | null
   quantity: number | string
   unitCost: number | string
+  subtotal: number | string
+  discountType: DiscountType | null
+  discountValue: number | string | null
+  discountAmount: number | string | null
+  totalAmount: number | string
 }
 
 interface ApiGoodsReceipt {
@@ -38,11 +44,24 @@ interface ApiGoodsReceipt {
   receivedAt: string
   verifiedAt: string | null
   note: string | null
+  subtotal: number | string
+  discountType: DiscountType | null
+  discountValue: number | string | null
+  discountAmount: number | string | null
+  taxRate: number | string | null
+  taxAmount: number | string | null
+  grandTotal: number | string
   items?: ApiGoodsReceiptItem[]
 }
 
 function toNumber(value: number | string | null | undefined): number {
   if (value === null || value === undefined || value === '') return 0
+  return Number(value)
+}
+
+/** Distinct from toNumber: a NULL discount/tax field must stay null, never become 0 (spec §9). */
+function toNullableNumber(value: number | string | null | undefined): number | null {
+  if (value === null || value === undefined || value === '') return null
   return Number(value)
 }
 
@@ -60,6 +79,11 @@ function fromApiItem(raw: ApiGoodsReceiptItem): GoodsReceiptItem {
     expiredDate: raw.expiredDate,
     quantity: toNumber(raw.quantity),
     unitCost: toNumber(raw.unitCost),
+    subtotal: toNumber(raw.subtotal),
+    discountType: raw.discountType ?? null,
+    discountValue: toNullableNumber(raw.discountValue),
+    discountAmount: toNullableNumber(raw.discountAmount),
+    totalAmount: toNumber(raw.totalAmount),
   }
 }
 
@@ -74,6 +98,13 @@ function fromApi(raw: ApiGoodsReceipt): GoodsReceipt {
     receivedAt: raw.receivedAt,
     verifiedAt: raw.verifiedAt,
     note: raw.note ?? '',
+    subtotal: toNumber(raw.subtotal),
+    discountType: raw.discountType ?? null,
+    discountValue: toNullableNumber(raw.discountValue),
+    discountAmount: toNullableNumber(raw.discountAmount),
+    taxRate: toNullableNumber(raw.taxRate),
+    taxAmount: toNullableNumber(raw.taxAmount),
+    grandTotal: toNumber(raw.grandTotal),
     items: (raw.items ?? []).map(fromApiItem),
   }
 }
@@ -81,6 +112,9 @@ function fromApi(raw: ApiGoodsReceipt): GoodsReceipt {
 function toReceivePayload(input: ReceiveGoodsInput) {
   return {
     note: input.note || undefined,
+    discountType: input.discountType ?? undefined,
+    discountValue: input.discountValue ?? undefined,
+    taxRate: input.taxRate ?? undefined,
     items: input.items.map((i) => ({
       purchaseOrderItemId: i.purchaseOrderItemId,
       unitId: i.unitId,
@@ -88,6 +122,8 @@ function toReceivePayload(input: ReceiveGoodsInput) {
       unitCost: i.unitCost,
       batchNumber: i.batchNumber,
       expiredDate: i.expiredDate || undefined,
+      discountType: i.discountType ?? undefined,
+      discountValue: i.discountValue ?? undefined,
     })),
   }
 }

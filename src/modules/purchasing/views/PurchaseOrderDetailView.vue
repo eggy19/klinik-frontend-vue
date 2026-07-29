@@ -5,6 +5,7 @@ import { useConfirm } from 'primevue/useconfirm'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseDataTable, { type DataTableColumn } from '@/components/base/BaseDataTable.vue'
+import BaseDialog from '@/components/base/BaseDialog.vue'
 import { useSupplierStore } from '@/modules/inventory/stores/supplier.store'
 import { useToastFeedback } from '@/composables/useToastFeedback'
 import { formatCurrency, formatDate, formatDateTime } from '@/utils/format'
@@ -26,6 +27,10 @@ const supplierStore = useSupplierStore()
 const po = ref<PurchaseOrder | null>(null)
 const receipts = ref<GoodsReceipt[]>([])
 const loading = ref(false)
+const rejectDialogVisible = ref(false)
+const rejectReason = ref('')
+const rejectSubmitting = ref(false)
+const rejectError = ref('')
 
 const poId = computed(() => route.params.id as string)
 const canEdit = computed(() => po.value?.status === 'DRAFT')
@@ -105,6 +110,31 @@ async function doApprove() {
   }
 }
 
+function openRejectDialog() {
+  rejectReason.value = ''
+  rejectError.value = ''
+  rejectDialogVisible.value = true
+}
+
+async function doReject() {
+  const reason = rejectReason.value.trim()
+  if (!reason) {
+    rejectError.value = 'Alasan penolakan wajib diisi.'
+    return
+  }
+  rejectSubmitting.value = true
+  try {
+    await store.reject(poId.value, reason)
+    toast.success('Purchase order berhasil ditolak.')
+    rejectDialogVisible.value = false
+    await load()
+  } catch {
+    toast.error()
+  } finally {
+    rejectSubmitting.value = false
+  }
+}
+
 function confirmCancel() {
   confirm.require({
     header: 'Batalkan Purchase Order',
@@ -166,6 +196,14 @@ onMounted(load)
                 <dt>Tanggal Dibatalkan</dt>
                 <dd>{{ formatDateTime(po.cancelledAt) }}</dd>
               </div>
+              <div v-if="po.rejectedAt">
+                <dt>Tanggal Ditolak</dt>
+                <dd>{{ formatDateTime(po.rejectedAt) }}</dd>
+              </div>
+              <div v-if="po.rejectionReason">
+                <dt>Alasan Penolakan</dt>
+                <dd>{{ po.rejectionReason }}</dd>
+              </div>
               <div v-if="po.note">
                 <dt>Catatan</dt>
                 <dd>{{ po.note }}</dd>
@@ -176,6 +214,7 @@ onMounted(load)
               <BaseButton v-if="canEdit" label="Edit" icon="pi pi-pencil" variant="secondary" @click="goEdit" />
               <BaseButton v-if="canSubmit" label="Submit" icon="pi pi-send" @click="doSubmit" />
               <BaseButton v-if="canApprove" label="Setujui" icon="pi pi-check" @click="doApprove" />
+              <BaseButton v-if="canApprove" label="Tolak" icon="pi pi-times-circle" variant="danger" @click="openRejectDialog" />
               <BaseButton v-if="canCancel" label="Batalkan" icon="pi pi-times" variant="danger" @click="confirmCancel" />
             </div>
           </BaseCard>
@@ -266,6 +305,28 @@ onMounted(load)
           </BaseCard>
         </div>
       </div>
+
+      <BaseDialog v-model:visible="rejectDialogVisible" header="Tolak Purchase Order">
+        <div class="po-detail__reject-form">
+          <p>Tolak PO "{{ po.poNumber }}"? Tindakan ini tidak dapat dibatalkan.</p>
+          <label class="po-detail__reject-label" for="po-reject-reason">
+            Alasan Penolakan <span class="po-detail__required" aria-hidden="true">*</span>
+          </label>
+          <textarea
+            id="po-reject-reason"
+            v-model="rejectReason"
+            class="po-detail__textarea"
+            rows="3"
+            placeholder="Jelaskan alasan penolakan PO ini..."
+          />
+          <small v-if="rejectError" class="po-detail__reject-error">{{ rejectError }}</small>
+        </div>
+
+        <template #footer>
+          <BaseButton label="Batal" variant="ghost" @click="rejectDialogVisible = false" />
+          <BaseButton label="Tolak PO" variant="danger" :loading="rejectSubmitting" @click="doReject" />
+        </template>
+      </BaseDialog>
     </template>
   </div>
 </template>
@@ -428,5 +489,43 @@ onMounted(load)
 .po-detail__loading {
   color: var(--text-muted);
   font-size: var(--font-sm);
+}
+
+.po-detail__reject-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.po-detail__reject-label {
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-heading);
+  color: var(--text);
+}
+
+.po-detail__required {
+  color: var(--color-danger);
+}
+
+.po-detail__textarea {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: var(--font-sm);
+  color: var(--text);
+  background: var(--surface-0);
+  resize: vertical;
+}
+
+.po-detail__textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.po-detail__reject-error {
+  color: var(--color-danger);
+  font-size: var(--font-xs);
 }
 </style>

@@ -129,6 +129,25 @@ const routes: RouteRecordRaw[] = [
           },
         ],
       },
+      // Management: monitoring batch, stock, dan stock movement.
+      {
+        path: 'management',
+        redirect: '/inventory/management/batch',
+        children: [
+          {
+            path: 'batch',
+            name: 'inventory-batch-list',
+            component: () => import('@/modules/inventory/views/InventoryBatchListView.vue'),
+            meta: { title: 'Inventory Batch' },
+          },
+          {
+            path: 'batch/:id',
+            name: 'inventory-batch-detail',
+            component: () => import('@/modules/inventory/views/InventoryBatchDetailView.vue'),
+            meta: { title: 'Detail Inventory Batch' },
+          },
+        ],
+      },
     ],
   },
   // Administrasi (data master + keamanan); default ke Tenant.

@@ -7,7 +7,7 @@ import Tab from 'primevue/tab'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseDataTable, { type DataTableColumn } from '@/components/base/BaseDataTable.vue'
-import { formatDateTime } from '@/utils/format'
+import { formatCurrency, formatDateTime } from '@/utils/format'
 import { usePurchaseOrderStore } from '../stores/purchase-order.store'
 import { useGoodsReceiptStore } from '../stores/goods-receipt.store'
 import PurchaseOrderStatusTag from '../components/PurchaseOrderStatusTag.vue'
@@ -34,6 +34,7 @@ const historyColumns: DataTableColumn[] = [
   { field: 'supplierName', header: 'Supplier' },
   { field: 'status', header: 'Status' },
   { field: 'receivedAt', header: 'Tanggal Diterima' },
+  { field: 'grandTotal', header: 'Total' },
 ]
 
 const pagination = computed(() =>
@@ -135,6 +136,10 @@ onMounted(() => fetchReceivable())
 
         <template #cell-receivedAt="{ data }">
           {{ formatDateTime(data.receivedAt) }}
+        </template>
+
+        <template #cell-grandTotal="{ data }">
+          {{ formatCurrency(data.grandTotal) }}
         </template>
 
         <template #row-actions="{ data }">

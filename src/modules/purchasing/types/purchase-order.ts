@@ -5,6 +5,7 @@ export type PurchaseOrderStatus =
   | 'PARTIALLY_RECEIVED'
   | 'RECEIVED'
   | 'CANCELLED'
+  | 'REJECTED'
 
 export const PO_STATUS_LABELS: Record<PurchaseOrderStatus, string> = {
   DRAFT: 'Draft',
@@ -13,6 +14,7 @@ export const PO_STATUS_LABELS: Record<PurchaseOrderStatus, string> = {
   PARTIALLY_RECEIVED: 'Diterima Sebagian',
   RECEIVED: 'Diterima Lengkap',
   CANCELLED: 'Dibatalkan',
+  REJECTED: 'Ditolak',
 }
 
 export type TagVariant = 'primary' | 'success' | 'warning' | 'danger' | 'info' | 'secondary'
@@ -24,6 +26,7 @@ export const PO_STATUS_VARIANT: Record<PurchaseOrderStatus, TagVariant> = {
   PARTIALLY_RECEIVED: 'warning',
   RECEIVED: 'success',
   CANCELLED: 'danger',
+  REJECTED: 'danger',
 }
 
 export interface PurchaseOrderItem {
@@ -50,6 +53,8 @@ export interface PurchaseOrder {
   submittedAt: string | null
   approvedAt: string | null
   cancelledAt: string | null
+  rejectedAt: string | null
+  rejectionReason: string
   createdAt: string
   items: PurchaseOrderItem[]
 }

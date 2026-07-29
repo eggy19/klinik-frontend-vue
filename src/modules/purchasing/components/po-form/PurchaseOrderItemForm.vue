@@ -40,6 +40,13 @@ const errors = ref<ErrorMap>({})
 
 const subtotal = computed(() => (form.quantity || 0) * (form.unitPrice || 0))
 
+// Tampilkan "SKU - nama item" agar item dengan nama mirip mudah dibedakan;
+// fallback ke itemCode kalau skuCode belum diisi di master item.
+function itemOptionLabel(item: Item): string {
+  const code = item.skuCode || item.itemCode
+  return code ? `${code} - ${item.itemName}` : item.itemName
+}
+
 async function loadUnitOptions(itemId: string) {
   if (!itemId) {
     unitLinks.value = []
@@ -112,12 +119,13 @@ onMounted(() => {
         <BaseSelect
           :model-value="form.itemId"
           :options="items"
-          option-label="itemName"
+          :option-label="itemOptionLabel"
           option-value="id"
           label="Item"
-          placeholder="Pilih item..."
+          placeholder="Cari nama item atau kode SKU..."
           required
           filter
+          :filter-fields="['skuCode', 'itemCode', 'itemName']"
           :error="errors.itemId"
           @update:model-value="onItemChange($event as string)"
         />

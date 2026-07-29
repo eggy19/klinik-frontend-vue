@@ -7,5 +7,9 @@
   --text: #111827;
   --text-muted: #6b7280;
 
+  --surface-border: var(--border);
+  --surface-0: var(--bg);
+  --surface-50: var(--surface);
+
   color-scheme: light;
 }

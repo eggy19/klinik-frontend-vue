@@ -8,6 +8,7 @@ import { useToastFeedback } from '@/composables/useToastFeedback'
 import { formatCurrency, formatDate, formatDateTime } from '@/utils/format'
 import { goodsReceiptApi } from '../api/goods-receipt.api'
 import GoodsReceiptStatusTag from '../components/GoodsReceiptStatusTag.vue'
+import GoodsReceiptTotals from '../components/goods-receipt/GoodsReceiptTotals.vue'
 import type { GoodsReceipt } from '../types/goods-receipt'
 
 const route = useRoute()
@@ -23,6 +24,25 @@ const deleting = ref(false)
 const grId = computed(() => route.params.id as string)
 const canVerify = computed(() => receipt.value?.status === 'DRAFT')
 const canDelete = computed(() => receipt.value?.status === 'DRAFT')
+
+/** goods_receipt.discountAmount hanya terisi untuk global discount — kalau yang
+ *  dipakai item discount, receipt-level discount tetap NULL per spec §9, jadi
+ *  totalnya diturunkan dari sum item di sini. */
+const itemDiscountTotal = computed(() => {
+  if (!receipt.value) return null
+  const sum = receipt.value.items.reduce((s, it) => s + (it.discountAmount ?? 0), 0)
+  return sum > 0 ? sum : null
+})
+const discountAmount = computed(() => receipt.value?.discountAmount ?? itemDiscountTotal.value)
+const discountLabel = computed(() => {
+  if (!receipt.value) return undefined
+  if (receipt.value.discountType) {
+    return receipt.value.discountType === 'PERCENTAGE'
+      ? `Diskon Global (${receipt.value.discountValue}%)`
+      : 'Diskon Global'
+  }
+  return itemDiscountTotal.value != null ? 'Diskon Per Item' : undefined
+})
 
 function goBack() {
   router.push('/inventory/purchasing/goods-receipts')
@@ -158,8 +178,11 @@ onMounted(load)
               <th>Satuan</th>
               <th class="gr-detail__col-num">Qty</th>
               <th class="gr-detail__col-num">Harga</th>
+              <th class="gr-detail__col-num">Subtotal</th>
+              <th class="gr-detail__col-num">Diskon</th>
               <th>No. Batch</th>
               <th>Kadaluarsa</th>
+              <th class="gr-detail__col-num">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -168,11 +191,26 @@ onMounted(load)
               <td>{{ item.unitName }}</td>
               <td class="gr-detail__col-num">{{ item.quantity }}</td>
               <td class="gr-detail__col-num">{{ formatCurrency(item.unitCost) }}</td>
+              <td class="gr-detail__col-num">{{ formatCurrency(item.subtotal) }}</td>
+              <td class="gr-detail__col-num">
+                {{ item.discountAmount != null ? `− ${formatCurrency(item.discountAmount)}` : '-' }}
+              </td>
               <td>{{ item.batchNumber }}</td>
               <td>{{ formatDate(item.expiredDate) }}</td>
+              <td class="gr-detail__col-num">{{ formatCurrency(item.totalAmount) }}</td>
             </tr>
           </tbody>
         </table>
+
+        <GoodsReceiptTotals
+          class="gr-detail__totals"
+          :subtotal="receipt.subtotal"
+          :discount-label="discountLabel"
+          :discount-amount="discountAmount"
+          :tax-rate="receipt.taxRate"
+          :tax-amount="receipt.taxAmount"
+          :grand-total="receipt.grandTotal"
+        />
       </BaseCard>
     </template>
   </div>
@@ -265,7 +303,11 @@ onMounted(load)
 }
 
 .gr-detail__col-num {
-  text-align: right;
+  text-align: left;
+}
+
+.gr-detail__totals {
+  margin-top: var(--space-4);
 }
 
 .gr-detail__loading {

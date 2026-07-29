@@ -35,6 +35,8 @@ interface ApiPurchaseOrder {
   submittedAt: string | null
   approvedAt: string | null
   cancelledAt: string | null
+  rejectedAt: string | null
+  rejectionReason: string | null
   createdAt: string
   items?: ApiPurchaseOrderItem[]
 }
@@ -71,6 +73,8 @@ function fromApi(raw: ApiPurchaseOrder): PurchaseOrder {
     submittedAt: raw.submittedAt,
     approvedAt: raw.approvedAt,
     cancelledAt: raw.cancelledAt,
+    rejectedAt: raw.rejectedAt,
+    rejectionReason: raw.rejectionReason ?? '',
     createdAt: raw.createdAt,
     items: (raw.items ?? []).map(fromApiItem),
   }
@@ -157,6 +161,14 @@ export const purchaseOrderApi = {
   async cancel(id: string): Promise<PurchaseOrder> {
     const res = await apiClient.post<ApiResponse<ApiPurchaseOrder>>(
       `/inventory/purchase-orders/${id}/cancel`,
+    )
+    return fromApi(res.data.data)
+  },
+
+  async reject(id: string, reason: string): Promise<PurchaseOrder> {
+    const res = await apiClient.post<ApiResponse<ApiPurchaseOrder>>(
+      `/inventory/purchase-orders/${id}/reject`,
+      { reason },
     )
     return fromApi(res.data.data)
   },

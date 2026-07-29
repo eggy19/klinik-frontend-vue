@@ -49,9 +49,9 @@ export const navItems: NavItem[] = [
         label: 'Management',
         icon: 'pi pi-cog',
         children: [
-          // Belum ada halaman/route — menunggu modul management dibuat.
+          // Stock & Stock Movement: belum ada halaman/route — menunggu modul management dibuat.
           { label: 'Stock', icon: 'pi pi-warehouse' },
-          { label: 'Batch', icon: 'pi pi-tags' },
+          { label: 'Batch', icon: 'pi pi-tags', to: '/inventory/management/batch' },
           { label: 'Stock Movement', icon: 'pi pi-arrow-right-arrow-left' },
         ],
       },

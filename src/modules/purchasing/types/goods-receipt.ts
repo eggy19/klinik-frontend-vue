@@ -12,6 +12,18 @@ export const GR_STATUS_VARIANT: Record<GoodsReceiptStatus, TagVariant> = {
   VERIFIED: 'success',
 }
 
+/** Global discount (goods_receipt) dan item discount (goods_receipt_item) bersifat
+ *  saling eksklusif dalam satu goods receipt (lihat backend INV_047). */
+export type DiscountType = 'PERCENTAGE' | 'FIXED'
+
+export const DISCOUNT_TYPE_OPTIONS: { label: string; value: DiscountType }[] = [
+  { label: 'Persentase (%)', value: 'PERCENTAGE' },
+  { label: 'Nominal (Rp)', value: 'FIXED' },
+]
+
+/** Mode diskon di form — hanya konsep UI, tidak dikirim langsung ke API. */
+export type ReceiptDiscountMode = 'NONE' | 'GLOBAL' | 'PER_ITEM'
+
 export interface GoodsReceiptItem {
   id: string
   purchaseOrderItemId: string
@@ -25,6 +37,11 @@ export interface GoodsReceiptItem {
   expiredDate: string | null
   quantity: number
   unitCost: number
+  subtotal: number
+  discountType: DiscountType | null
+  discountValue: number | null
+  discountAmount: number | null
+  totalAmount: number
 }
 
 export interface GoodsReceipt {
@@ -37,6 +54,13 @@ export interface GoodsReceipt {
   receivedAt: string
   verifiedAt: string | null
   note: string
+  subtotal: number
+  discountType: DiscountType | null
+  discountValue: number | null
+  discountAmount: number | null
+  taxRate: number | null
+  taxAmount: number | null
+  grandTotal: number
   items: GoodsReceiptItem[]
 }
 
@@ -50,10 +74,15 @@ export interface ReceiveGoodsItemInput {
   unitCost: number
   batchNumber: string
   expiredDate: string
+  discountType: DiscountType | null
+  discountValue: number | null
 }
 
 export interface ReceiveGoodsInput {
   note: string
+  discountType: DiscountType | null
+  discountValue: number | null
+  taxRate: number | null
   items: ReceiveGoodsItemInput[]
 }
 
@@ -68,6 +97,8 @@ export function receiveGoodsItemFromPoItem(poItem: PurchaseOrderItem): ReceiveGo
     unitCost: poItem.unitPrice,
     batchNumber: '',
     expiredDate: '',
+    discountType: null,
+    discountValue: null,
   }
 }
 

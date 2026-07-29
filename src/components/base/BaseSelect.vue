@@ -8,7 +8,7 @@ const props = withDefaults(
   defineProps<{
     modelValue?: V | null
     options: T[]
-    optionLabel?: string
+    optionLabel?: string | ((data: T) => string)
     optionValue?: string
     label?: string
     placeholder?: string
@@ -16,6 +16,7 @@ const props = withDefaults(
     disabled?: boolean
     error?: string
     filter?: boolean
+    filterFields?: string[]
     showClear?: boolean
   }>(),
   {
@@ -52,6 +53,7 @@ const hasError = computed(() => !!props.error)
       :disabled="disabled"
       :invalid="hasError"
       :filter="filter"
+      :filter-fields="filterFields"
       :show-clear="showClear"
       class="base-field__control"
       @update:model-value="emit('update:modelValue', $event)"

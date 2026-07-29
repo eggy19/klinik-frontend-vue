@@ -72,6 +72,12 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
     return updated
   }
 
+  async function reject(id: string, reason: string) {
+    const updated = await purchaseOrderApi.reject(id, reason)
+    items.value = items.value.map((po) => (po.id === id ? updated : po))
+    return updated
+  }
+
   return {
     items,
     loading,
@@ -87,5 +93,6 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
     submit,
     approve,
     cancel,
+    reject,
   }
 })
