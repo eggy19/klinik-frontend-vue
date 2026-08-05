@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Tabs from 'primevue/tabs'
 import TabList from 'primevue/tablist'
@@ -15,12 +15,11 @@ import { useUnitStore } from '../stores/unit.store'
 import { useSupplierStore } from '../stores/supplier.store'
 import { useDrugGroupStore } from '../stores/drug-group.store'
 import { useToastFeedback } from '@/composables/useToastFeedback'
-import { emptyItem, type CurrentItemPrice, type ItemInput } from '../types/item'
+import { emptyItem, type ItemInput, type ItemUnitRow } from '../types/item'
 import ItemFormBasic from '../components/item-form/ItemFormBasic.vue'
 import ItemFormStock from '../components/item-form/ItemFormStock.vue'
 import ItemFormSuppliers from '../components/item-form/ItemFormSuppliers.vue'
-import ItemFormPrices from '../components/item-form/ItemFormPrices.vue'
-import ItemFormConversions from '../components/item-form/ItemFormConversions.vue'
+import ItemFormUnits from '../components/item-form/ItemFormUnits.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -39,9 +38,21 @@ const form = reactive<ItemInput>(emptyItem())
 const errors = reactive<Record<string, string>>({})
 const submitting = reactive({ value: false })
 const loadingItem = reactive({ value: false })
-// Harga aktif saat form dimuat — dipakai untuk deteksi apakah harga beli
-// berubah (baru trigger POST /prices baru) dan untuk info di ItemFormPrices.
-const currentPrice = ref<CurrentItemPrice | null>(null)
+// Snapshot baris satuan seperti dimuat dari server — dipakai untuk diff saat
+// simpan (baris mana yang baru/berubah/dihapus), bukan untuk ditampilkan.
+const loadedUnits = ref<ItemUnitRow[]>([])
+
+// Satuan dasar item selalu mengikuti dropdown "Satuan Default" di Info Dasar
+// (baris base di tab Satuan & Harga cuma representasi baris pertama). Cuma
+// relevan di mode create — di mode edit satuan dasar sudah terkunci di server.
+watch(
+  () => form.defaultUnitId,
+  (newId) => {
+    if (isEditMode.value) return
+    const base = form.units.find((u) => u.isBaseUnit)
+    if (base) base.unitId = newId
+  },
+)
 
 function validate(): boolean {
   const e: Record<string, string> = {}
@@ -51,24 +62,124 @@ function validate(): boolean {
   if (!form.categoryId) e.categoryId = 'Kategori wajib dipilih.'
   if (!form.defaultUnitId) e.defaultUnitId = 'Satuan default wajib dipilih.'
   if (form.minimumStock < 0) e.minimumStock = 'Min stok tidak boleh negatif.'
-  if (form.purchasePrice < 0) e.purchasePrice = 'Harga beli tidak boleh negatif.'
-  if (form.marginPercentage !== null && form.marginPercentage < 0) {
-    e.marginPercentage = 'Margin tidak boleh negatif.'
+  if (form.marginValue !== null && form.marginValue < 0) {
+    e.marginValue = 'Margin tidak boleh negatif.'
   }
 
-  const hasCircular = form.conversions.some((c) => c.fromUnitId === c.toUnitId)
-  if (hasCircular) e.conversions = 'Konversi tidak boleh dari dan ke satuan yang sama.'
+  if (!form.units.some((u) => u.isBaseUnit)) {
+    e.units = 'Satuan dasar wajib ada.'
+  }
+
+  const seenUnitIds = new Set<string>()
+  form.units.forEach((row, i) => {
+    if (!row.unitId) {
+      e[`units.${i}.unitId`] = 'Satuan wajib dipilih.'
+    } else if (seenUnitIds.has(row.unitId)) {
+      e[`units.${i}.unitId`] = 'Satuan sudah dipakai baris lain.'
+    } else {
+      seenUnitIds.add(row.unitId)
+    }
+    if (!(row.conversionFactor > 0)) {
+      e[`units.${i}.factor`] = 'Faktor harus lebih dari 0.'
+    }
+    if (row.purchasePrice !== null && row.purchasePrice < 0) {
+      e[`units.${i}.purchasePrice`] = 'Harga beli tidak boleh negatif.'
+    }
+  })
+
+  const purchaseEnabledRows = form.units.filter((u) => u.purchaseEnabled)
+  if (purchaseEnabledRows.length > 0 && !purchaseEnabledRows.some((u) => u.defaultPurchase)) {
+    e.units = 'Pilih satu satuan sebagai Default Beli.'
+  }
+  const salesEnabledRows = form.units.filter((u) => u.salesEnabled)
+  if (salesEnabledRows.length > 0 && !salesEnabledRows.some((u) => u.defaultSales)) {
+    e.units = 'Pilih satu satuan sebagai Default Jual.'
+  }
 
   Object.keys(errors).forEach((k) => delete errors[k])
   Object.assign(errors, e)
   return Object.keys(e).length === 0
 }
 
+/**
+ * Sinkronkan baris master_item_unit (+ harga) ke server: baris baru -> POST,
+ * baris tersimpan yang faktor/flag-nya berubah -> PATCH, baris yang hilang
+ * dari form -> DELETE, lalu baris dengan harga beli baru/berubah -> POST
+ * /prices. Dijalankan berurutan (bukan Promise.all) supaya unitLinkId baris
+ * yang baru dibuat sudah tersedia sebelum dipakai menambah harganya.
+ */
+async function syncUnits(itemId: string) {
+  for (const row of form.units) {
+    if (row.unitLinkId === null) {
+      const created = await itemApi.addUnit(itemId, {
+        unitId: row.unitId,
+        isBaseUnit: row.isBaseUnit,
+        conversionFactor: row.conversionFactor,
+        purchaseEnabled: row.purchaseEnabled,
+        salesEnabled: row.salesEnabled,
+        defaultPurchase: row.defaultPurchase,
+        defaultSales: row.defaultSales,
+      })
+      row.unitLinkId = created.unitLinkId
+    }
+  }
+
+  for (const row of form.units) {
+    if (row.unitLinkId === null) continue
+    const before = loadedUnits.value.find((u) => u.unitLinkId === row.unitLinkId)
+    if (!before) continue // baru dibuat di loop atas, belum ada snapshot lama untuk dibandingkan
+    const changed =
+      before.conversionFactor !== row.conversionFactor ||
+      before.purchaseEnabled !== row.purchaseEnabled ||
+      before.salesEnabled !== row.salesEnabled ||
+      before.defaultPurchase !== row.defaultPurchase ||
+      before.defaultSales !== row.defaultSales
+    if (changed) {
+      await itemApi.updateUnit(itemId, row.unitLinkId, {
+        conversionFactor: row.conversionFactor,
+        purchaseEnabled: row.purchaseEnabled,
+        salesEnabled: row.salesEnabled,
+        defaultPurchase: row.defaultPurchase,
+        defaultSales: row.defaultSales,
+      })
+    }
+  }
+
+  const currentLinkIds = new Set(
+    form.units.map((u) => u.unitLinkId).filter((id): id is string => id !== null),
+  )
+  for (const before of loadedUnits.value) {
+    if (before.unitLinkId && !currentLinkIds.has(before.unitLinkId)) {
+      await itemApi.removeUnit(itemId, before.unitLinkId)
+    }
+  }
+
+  for (const row of form.units) {
+    if (row.unitLinkId === null) continue
+    const purchasePrice = row.purchasePrice ?? 0
+    if (purchasePrice <= 0) continue
+    const before = row.currentPrice
+    const priceChanged =
+      !before ||
+      before.purchasePrice !== purchasePrice ||
+      before.marginType !== row.marginType ||
+      before.marginValue !== row.marginValue
+    if (priceChanged) {
+      await itemApi.addUnitPrice(itemId, row.unitLinkId, {
+        purchasePrice,
+        marginType: row.marginType,
+        marginValue: row.marginValue,
+      })
+    }
+  }
+}
+
 async function onSubmit() {
   if (!validate()) return
   submitting.value = true
+
+  let itemId: string
   try {
-    let itemId: string
     if (isEditMode.value) {
       itemId = route.params.id as string
       await itemApi.update(itemId, { ...form })
@@ -76,27 +187,42 @@ async function onSubmit() {
       const created = await itemApi.create({ ...form })
       itemId = created.id
     }
-
-    // Master harga (master_item_price) dikelola lewat endpoint terpisah — cuma
-    // kirim entri harga baru kalau harga beli diisi dan berbeda dari yang aktif
-    // saat ini, supaya tidak membuat baris histori duplikat setiap kali disimpan.
-    const priceChanged =
-      form.purchasePrice > 0 &&
-      form.purchasePrice !== currentPrice.value?.purchasePrice
-    if (priceChanged) {
-      await itemApi.addPrice(itemId, {
-        purchasePrice: form.purchasePrice,
-        effectiveDate: new Date().toISOString().slice(0, 10),
-      })
-    }
-
-    toast.success(isEditMode.value ? 'Item berhasil diperbarui.' : 'Item berhasil ditambahkan.')
-    router.push('/inventory/master-data/obat')
   } catch {
     toast.error()
-  } finally {
     submitting.value = false
+    return
   }
+
+  try {
+    if (!isEditMode.value) {
+      // Baris satuan dasar otomatis terdaftar backend saat item dibuat —
+      // cocokkan lewat unitId dulu supaya syncUnits tidak addUnit dobel (INV_026).
+      const serverUnits = await itemApi.getUnits(itemId)
+      for (const row of form.units) {
+        if (row.unitLinkId === null) {
+          const match = serverUnits.find((u) => u.unitId === row.unitId)
+          if (match) row.unitLinkId = match.unitLinkId
+        }
+      }
+      loadedUnits.value = serverUnits
+    }
+    await syncUnits(itemId)
+  } catch {
+    try {
+      const refreshed = await itemApi.getUnits(itemId)
+      form.units = refreshed
+      loadedUnits.value = refreshed.map((u) => ({ ...u }))
+    } catch {
+      // Resync pun gagal — biarkan form apa adanya, user bisa memuat ulang manual.
+    }
+    toast.error('Item tersimpan, tetapi sinkronisasi satuan & harga gagal. Periksa kembali data di bawah.')
+    submitting.value = false
+    return
+  }
+
+  toast.success(isEditMode.value ? 'Item berhasil diperbarui.' : 'Item berhasil ditambahkan.')
+  router.push('/inventory/master-data/obat')
+  submitting.value = false
 }
 
 function goBack() {
@@ -116,15 +242,13 @@ onMounted(async () => {
     loadingItem.value = true
     try {
       const id = route.params.id as string
-      // Supplier, harga, dan konversi disediakan backend lewat endpoint terpisah,
-      // bukan bagian dari response detail item.
-      const [item, suppliers, price, conversions] = await Promise.all([
+      // Supplier & satuan (dengan harga aktifnya masing-masing) disediakan
+      // backend lewat endpoint terpisah, bukan bagian dari response detail item.
+      const [item, suppliers, units] = await Promise.all([
         itemApi.getById(id),
         itemApi.getSuppliers(id).catch(() => []),
-        itemApi.getCurrentPrice(id).catch(() => null),
-        itemApi.getConversions(id).catch(() => []),
+        itemApi.getUnits(id).catch(() => []),
       ])
-      currentPrice.value = price
 
       // Backend tidak menyimpan itemTypeId di item — turunkan dari kategorinya
       // agar dropdown Tipe Item & Kategori ter-render.
@@ -148,11 +272,12 @@ onMounted(async () => {
         trackBatch: item.trackBatch,
         trackExpiry: item.trackExpiry,
         prescriptionRequired: item.prescriptionRequired,
-        marginPercentage: item.marginPercentage,
+        marginType: item.marginType,
+        marginValue: item.marginValue,
         suppliers,
-        purchasePrice: price?.purchasePrice ?? 0,
-        conversions,
+        units: units.map((u) => ({ ...u })),
       })
+      loadedUnits.value = units.map((u) => ({ ...u }))
     } catch {
       toast.error('Gagal memuat data item.')
       router.push('/inventory/master-data/obat')
@@ -202,8 +327,7 @@ onMounted(async () => {
           <TabList>
             <Tab value="stok">Stok</Tab>
             <Tab value="supplier">Supplier</Tab>
-            <Tab value="harga">Harga</Tab>
-            <Tab value="konversi">Konversi Satuan</Tab>
+            <Tab value="satuan">Satuan & Harga</Tab>
           </TabList>
           <TabPanels>
             <TabPanel value="stok">
@@ -216,19 +340,9 @@ onMounted(async () => {
                 <ItemFormSuppliers :form="form" :suppliers="supplierStore.items" />
               </div>
             </TabPanel>
-            <TabPanel value="harga">
+            <TabPanel value="satuan">
               <div class="item-form-view__tab-content">
-                <ItemFormPrices
-                  :form="form"
-                  :units="unitStore.items"
-                  :current-price="currentPrice"
-                  :errors="errors"
-                />
-              </div>
-            </TabPanel>
-            <TabPanel value="konversi">
-              <div class="item-form-view__tab-content">
-                <ItemFormConversions :form="form" :units="unitStore.items" :errors="errors" />
+                <ItemFormUnits :form="form" :units="unitStore.items" :errors="errors" />
               </div>
             </TabPanel>
           </TabPanels>
@@ -263,7 +377,7 @@ onMounted(async () => {
 }
 
 .item-form-view__section-title {
-  font-size: var(--font-base);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-heading);
   color: var(--text);
 }

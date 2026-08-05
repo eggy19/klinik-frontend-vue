@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import BaseSelect from '@/components/base/BaseSelect.vue'
 import BaseInput from '@/components/base/BaseInput.vue'
+import BaseCurrencyInput from '@/components/base/BaseCurrencyInput.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import { itemApi } from '@/modules/inventory/api/item.api'
 import type { Item } from '@/modules/inventory/types/item'
@@ -152,13 +153,12 @@ onMounted(() => {
         @update:model-value="form.quantity = Number($event)"
       />
 
-      <BaseInput
+      <BaseCurrencyInput
         :model-value="form.unitPrice"
-        type="number"
         label="Harga Beli"
         required
         :error="errors.unitPrice"
-        @update:model-value="form.unitPrice = Number($event)"
+        @update:model-value="form.unitPrice = $event ?? 0"
       />
 
       <div class="po-item-form__subtotal md:col-span-2">

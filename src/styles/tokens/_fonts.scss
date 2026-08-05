@@ -1,0 +1,42 @@
+// Font Frutiger LT — file TTF lokal di public/font/frutiger/ (docs/02-design-system.md).
+// font-display: swap agar teks tidak invisible saat font sedang dimuat (FOIT).
+
+@font-face {
+  font-family: 'Frutiger LT';
+  src: url('/font/frutiger/Frutiger%20LT%2045%20Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Frutiger LT';
+  src: url('/font/frutiger/Frutiger%20LT%2055%20Roman.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Frutiger LT';
+  src: url('/font/frutiger/Frutiger%20LT%2056%20Italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Frutiger LT';
+  src: url('/font/frutiger/Frutiger%20LT%2065%20Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Frutiger LT';
+  src: url('/font/frutiger/Frutiger%20LT%2075%20Black.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}

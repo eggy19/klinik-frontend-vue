@@ -1,7 +1,10 @@
-// Typography (docs/02-design-system.md). Font Inter, heading 600 / body 400.
+// Typography (docs/02-design-system.md). Font Frutiger LT, heading 600 / body 400.
+// Compact density: base font-size 0.8125rem (13px @ root 16px, root TIDAK diubah).
 :root {
-  --font-family: 'Inter', sans-serif;
+  --font-family: 'Frutiger LT', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
+  // Skala lama (px) — dipertahankan untuk heading/elemen besar (h1-h6, judul kartu, dsb.)
+  // yang sengaja tidak termasuk cakupan compact-density (lihat overrides/_compact-density.scss).
   --font-xs: 12px;
   --font-sm: 14px;
   --font-md: 16px;
@@ -9,6 +12,12 @@
   --font-xl: 20px;
   --font-2xl: 24px;
   --font-3xl: 32px;
+
+  // Skala compact (rem) — dipakai body & di-force ke komponen form/table/PrimeVue
+  // lewat overrides/_compact-density.scss.
+  --font-size-base: 0.8125rem; // 13px
+  --font-size-sm: 0.75rem; // 12px — badge/tag
+  --font-size-xs: 0.625rem; // 10px — caption/small
 
   --font-weight-body: 400;
   --font-weight-heading: 600;

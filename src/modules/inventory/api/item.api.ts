@@ -3,11 +3,12 @@ import { apiClient } from '@/api/client'
 import type { ApiResponse, PaginationMeta } from '@/api/types'
 import type {
   CurrentItemPrice,
+  CurrentUnitPrice,
   Item,
-  ItemConversion,
   ItemInput,
   ItemSupplier,
-  ItemUnitLink,
+  ItemUnitRow,
+  MarginType,
 } from '../types/item'
 
 // Shape dari backend — GET detail memakai nested objects, POST/PUT memakai IDs.
@@ -72,11 +73,11 @@ function fromApi(raw: ApiItem): Item {
     trackBatch: raw.trackBatch ?? false,
     trackExpiry: raw.trackExpiry ?? false,
     prescriptionRequired: raw.prescriptionRequired ?? false,
-    marginPercentage: toNullableNumber(raw.marginPercentage),
+    marginType: raw.marginType ?? null,
+    marginValue: toNullableNumber(raw.marginValue),
     isActive: raw.isActive ?? true,
     suppliers: raw.suppliers ?? [],
     currentPrice: null,
-    conversions: raw.conversions ?? [],
   }
 }
 
@@ -89,37 +90,96 @@ interface ApiItemSupplier {
 interface ApiItemPrice {
   purchasePrice?: number | string | null
   sellingPrice?: number | string | null
-  marginPercentage?: number | string | null
+  marginType?: MarginType | null
+  marginValue?: number | string | null
   effectiveDate?: string | null
 }
 
-interface ApiItemConversion {
-  fromUnitId: string
-  toUnitId: string
-  conversionFactor?: number | string | null
+// Baris master_item_unit_price bersarang di dalam ApiItemUnit.currentPrice
+// (lihat ItemUnitService.list — join current_price per baris satuan).
+interface ApiItemUnitPrice {
+  purchasePrice?: number | string | null
+  marginType?: MarginType | null
+  marginValue?: number | string | null
+  sellingPrice?: number | string | null
+  effectiveDate?: string | null
 }
 
 interface ApiItemUnit {
   id: string
   unitId: string
   isBaseUnit?: boolean
+  conversionFactor?: number | string | null
+  purchaseEnabled?: boolean
+  salesEnabled?: boolean
+  defaultPurchase?: boolean
+  defaultSales?: boolean
+  currentPrice?: ApiItemUnitPrice | null
 }
 
 function fromApiPrice(raw: ApiItemPrice): CurrentItemPrice {
   return {
     purchasePrice: toNumber(raw.purchasePrice),
     sellingPrice: toNumber(raw.sellingPrice),
-    marginPercentage: toNumber(raw.marginPercentage),
+    marginType: raw.marginType ?? 'PERCENTAGE',
+    marginValue: toNumber(raw.marginValue),
     effectiveDate: raw.effectiveDate ?? '',
   }
 }
 
-// purchasePrice dikirim lewat endpoint /prices terpisah (lihat addPrice), bukan
-// bagian payload item — drugGroupId FK opsional juga dikirim undefined saat kosong
-// karena backend menolak string kosong untuk @IsUUID().
+function fromApiUnitPrice(raw: ApiItemUnitPrice): CurrentUnitPrice {
+  return {
+    purchasePrice: toNumber(raw.purchasePrice),
+    marginType: raw.marginType ?? null,
+    marginValue: toNullableNumber(raw.marginValue),
+    sellingPrice: toNumber(raw.sellingPrice),
+    effectiveDate: raw.effectiveDate ?? '',
+  }
+}
+
+function fromApiUnit(raw: ApiItemUnit): ItemUnitRow {
+  const currentPrice = raw.currentPrice ? fromApiUnitPrice(raw.currentPrice) : null
+  return {
+    unitLinkId: raw.id,
+    unitId: raw.unitId,
+    conversionFactor: raw.conversionFactor != null ? toNumber(raw.conversionFactor) : 1,
+    purchaseEnabled: raw.purchaseEnabled ?? true,
+    salesEnabled: raw.salesEnabled ?? true,
+    defaultPurchase: raw.defaultPurchase ?? false,
+    defaultSales: raw.defaultSales ?? false,
+    isBaseUnit: raw.isBaseUnit ?? false,
+    purchasePrice: currentPrice?.purchasePrice ?? null,
+    marginType: currentPrice?.marginType ?? null,
+    marginValue: currentPrice?.marginValue ?? null,
+    currentPrice,
+  }
+}
+
+// purchasePrice/margin per satuan dikirim lewat endpoint /units/:id/prices
+// terpisah (lihat addUnitPrice), bukan bagian payload item — drugGroupId FK
+// opsional juga dikirim undefined saat kosong karena backend menolak string
+// kosong untuk @IsUUID().
 function toCreatePayload(input: ItemInput) {
-  const { purchasePrice: _purchasePrice, ...rest } = input
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { units: _units, ...rest } = input
   return { ...rest, drugGroupId: input.drugGroupId || undefined }
+}
+
+export interface ItemUnitWritePayload {
+  unitId: string
+  isBaseUnit?: boolean
+  conversionFactor: number
+  purchaseEnabled: boolean
+  salesEnabled: boolean
+  defaultPurchase: boolean
+  defaultSales: boolean
+}
+
+export interface ItemUnitPriceWritePayload {
+  purchasePrice: number
+  marginType?: MarginType | null
+  marginValue?: number | null
+  effectiveDate?: string
 }
 
 export const itemApi = {
@@ -156,16 +216,12 @@ export const itemApi = {
     return all
   },
 
-  /** Satuan yang terdaftar untuk item ini (master_item_unit) — dipakai dropdown satuan di baris Purchase Order. */
-  async getUnits(id: string): Promise<ItemUnitLink[]> {
+  /** Satuan yang terdaftar untuk item ini (master_item_unit), masing-masing membawa harga aktifnya — dipakai dropdown satuan Purchase Order & tab "Satuan & Harga". */
+  async getUnits(id: string): Promise<ItemUnitRow[]> {
     const res = await apiClient.get<ApiResponse<ApiItemUnit[]>>(
       `/inventory/master/items/${id}/units`,
     )
-    return res.data.data.map((r) => ({
-      id: r.id,
-      unitId: r.unitId,
-      isBaseUnit: r.isBaseUnit ?? false,
-    }))
+    return res.data.data.map(fromApiUnit)
   },
 
   async getById(id: string): Promise<Item> {
@@ -183,7 +239,7 @@ export const itemApi = {
     }))
   },
 
-  /** Harga aktif terkini item (1 harga per item, tanpa dimensi satuan), atau null kalau belum pernah diisi. */
+  /** Harga aktif terkini item (endpoint legacy — sudah di-rewire backend ke baris satuan dasar), atau null kalau belum pernah diisi. Dipakai prefill harga di form Purchase Order/Goods Receipt. */
   async getCurrentPrice(id: string): Promise<CurrentItemPrice | null> {
     try {
       const res = await apiClient.get<ApiResponse<ApiItemPrice>>(
@@ -194,26 +250,6 @@ export const itemApi = {
       if (axios.isAxiosError(err) && err.response?.status === 404) return null
       throw err
     }
-  },
-
-  /** Tambah entri harga baru — harga jual & margin dihitung otomatis oleh backend. */
-  async addPrice(id: string, input: { purchasePrice: number; effectiveDate: string }): Promise<CurrentItemPrice> {
-    const res = await apiClient.post<ApiResponse<ApiItemPrice>>(
-      `/inventory/master/items/${id}/prices`,
-      { purchase_price: input.purchasePrice, effective_date: input.effectiveDate },
-    )
-    return fromApiPrice(res.data.data)
-  },
-
-  async getConversions(id: string): Promise<ItemConversion[]> {
-    const res = await apiClient.get<ApiResponse<ApiItemConversion[]>>(
-      `/inventory/master/items/${id}/conversions`,
-    )
-    return res.data.data.map((r) => ({
-      fromUnitId: r.fromUnitId,
-      toUnitId: r.toUnitId,
-      factor: toNumber(r.conversionFactor),
-    }))
   },
 
   async create(input: ItemInput): Promise<Item> {
@@ -242,5 +278,78 @@ export const itemApi = {
 
   async remove(id: string): Promise<void> {
     await apiClient.delete(`/inventory/master/items/${id}`)
+  },
+
+  /** Daftarkan satuan baru untuk item (master_item_unit). */
+  async addUnit(itemId: string, input: ItemUnitWritePayload): Promise<ItemUnitRow> {
+    const res = await apiClient.post<ApiResponse<ApiItemUnit>>(
+      `/inventory/master/items/${itemId}/units`,
+      {
+        unit_id: input.unitId,
+        is_base_unit: input.isBaseUnit,
+        conversion_factor: input.conversionFactor,
+        purchase_enabled: input.purchaseEnabled,
+        sales_enabled: input.salesEnabled,
+        default_purchase: input.defaultPurchase,
+        default_sales: input.defaultSales,
+      },
+    )
+    return fromApiUnit(res.data.data)
+  },
+
+  /** Ubah faktor konversi / flag beli-jual-default satuan. Perubahan faktor ditolak backend (INV_025) kalau item sudah dipakai di transaksi. */
+  async updateUnit(
+    itemId: string,
+    unitLinkId: string,
+    input: Partial<Omit<ItemUnitWritePayload, 'unitId' | 'isBaseUnit'>>,
+  ): Promise<ItemUnitRow> {
+    const res = await apiClient.patch<ApiResponse<ApiItemUnit>>(
+      `/inventory/master/items/${itemId}/units/${unitLinkId}`,
+      {
+        conversion_factor: input.conversionFactor,
+        purchase_enabled: input.purchaseEnabled,
+        sales_enabled: input.salesEnabled,
+        default_purchase: input.defaultPurchase,
+        default_sales: input.defaultSales,
+      },
+    )
+    return fromApiUnit(res.data.data)
+  },
+
+  /** Hapus satuan non-dasar dari item. */
+  async removeUnit(itemId: string, unitLinkId: string): Promise<void> {
+    await apiClient.delete(`/inventory/master/items/${itemId}/units/${unitLinkId}`)
+  },
+
+  /** Tambah entri harga baru untuk satuan tertentu — harga jual dihitung otomatis oleh backend dari margin (baris ini, override item, atau default OTC/Resep). */
+  async addUnitPrice(
+    itemId: string,
+    unitLinkId: string,
+    input: ItemUnitPriceWritePayload,
+  ): Promise<CurrentUnitPrice> {
+    const res = await apiClient.post<ApiResponse<ApiItemUnitPrice>>(
+      `/inventory/master/items/${itemId}/units/${unitLinkId}/prices`,
+      {
+        purchase_price: input.purchasePrice,
+        margin_type: input.marginType ?? undefined,
+        margin_value: input.marginValue ?? undefined,
+        effective_date: input.effectiveDate ?? new Date().toISOString().slice(0, 10),
+        is_active: true,
+      },
+    )
+    return fromApiUnitPrice(res.data.data)
+  },
+
+  /** Harga aktif satuan tertentu, atau null kalau belum pernah diisi. */
+  async getUnitPriceCurrent(itemId: string, unitLinkId: string): Promise<CurrentUnitPrice | null> {
+    try {
+      const res = await apiClient.get<ApiResponse<ApiItemUnitPrice>>(
+        `/inventory/master/items/${itemId}/units/${unitLinkId}/prices/current`,
+      )
+      return fromApiUnitPrice(res.data.data)
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err) && err.response?.status === 404) return null
+      throw err
+    }
   },
 }

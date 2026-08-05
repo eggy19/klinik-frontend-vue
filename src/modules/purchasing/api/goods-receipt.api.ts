@@ -5,6 +5,8 @@ import type {
   GoodsReceipt,
   GoodsReceiptItem,
   GoodsReceiptStatus,
+  MarginSource,
+  MarginType,
   QueryGoodsReceipt,
   ReceiveGoodsInput,
 } from '../types/goods-receipt'
@@ -29,6 +31,10 @@ interface ApiGoodsReceiptItem {
   discountValue: number | string | null
   discountAmount: number | string | null
   totalAmount: number | string
+  marginSource: MarginSource
+  marginType: MarginType
+  marginValue: number | string
+  sellingPrice: number | string
 }
 
 interface ApiGoodsReceipt {
@@ -84,6 +90,10 @@ function fromApiItem(raw: ApiGoodsReceiptItem): GoodsReceiptItem {
     discountValue: toNullableNumber(raw.discountValue),
     discountAmount: toNullableNumber(raw.discountAmount),
     totalAmount: toNumber(raw.totalAmount),
+    marginSource: raw.marginSource,
+    marginType: raw.marginType,
+    marginValue: toNumber(raw.marginValue),
+    sellingPrice: toNumber(raw.sellingPrice),
   }
 }
 
@@ -124,6 +134,9 @@ function toReceivePayload(input: ReceiveGoodsInput) {
       expiredDate: i.expiredDate || undefined,
       discountType: i.discountType ?? undefined,
       discountValue: i.discountValue ?? undefined,
+      marginSource: i.marginSource,
+      marginType: i.marginType ?? undefined,
+      marginValue: i.marginValue ?? undefined,
     })),
   }
 }

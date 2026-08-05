@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseSelect from '@/components/base/BaseSelect.vue'
 import BaseSummaryCard from '@/components/base/BaseSummaryCard.vue'
@@ -19,6 +19,7 @@ import {
   type StockStatus,
 } from '../types/batch'
 
+const route = useRoute()
 const router = useRouter()
 const store = useInventoryBatchStore()
 const itemStore = useItemStore()
@@ -91,6 +92,10 @@ function goDetail(batch: { id: string }) {
 }
 
 onMounted(() => {
+  const itemIdFromQuery = route.query.item_id
+  if (typeof itemIdFromQuery === 'string') {
+    filterItemId.value = itemIdFromQuery
+  }
   fetch()
   store.fetchStats()
   if (itemStore.items.length === 0) itemStore.fetchAll().catch(() => {})

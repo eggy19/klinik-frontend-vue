@@ -24,6 +24,23 @@ export const DISCOUNT_TYPE_OPTIONS: { label: string; value: DiscountType }[] = [
 /** Mode diskon di form — hanya konsep UI, tidak dikirim langsung ke API. */
 export type ReceiptDiscountMode = 'NONE' | 'GLOBAL' | 'PER_ITEM'
 
+/** Sama bentuknya dengan DiscountType — dideklarasikan lokal (bukan di-import
+ *  dari modul item) mengikuti pola DiscountType di file ini juga. */
+export type MarginType = 'PERCENTAGE' | 'FIXED'
+
+export const MARGIN_TYPE_OPTIONS: { label: string; value: MarginType }[] = [
+  { label: 'Persentase (%)', value: 'PERCENTAGE' },
+  { label: 'Nominal (Rp)', value: 'FIXED' },
+]
+
+/** DEFAULT = ikut margin item/Pengaturan Margin; MANUAL = user override saat GR (lihat backend INV_050). */
+export type MarginSource = 'DEFAULT' | 'MANUAL'
+
+export const MARGIN_SOURCE_OPTIONS: { label: string; value: MarginSource }[] = [
+  { label: 'Margin Default', value: 'DEFAULT' },
+  { label: 'Margin Manual', value: 'MANUAL' },
+]
+
 export interface GoodsReceiptItem {
   id: string
   purchaseOrderItemId: string
@@ -42,6 +59,10 @@ export interface GoodsReceiptItem {
   discountValue: number | null
   discountAmount: number | null
   totalAmount: number
+  marginSource: MarginSource
+  marginType: MarginType
+  marginValue: number
+  sellingPrice: number
 }
 
 export interface GoodsReceipt {
@@ -66,6 +87,7 @@ export interface GoodsReceipt {
 
 export interface ReceiveGoodsItemInput {
   purchaseOrderItemId: string
+  itemId: string
   itemName: string
   /** Sisa qty yang masih bisa diterima, dalam satuan PO line — batas atas validasi form. */
   remainingQuantity: number
@@ -76,6 +98,9 @@ export interface ReceiveGoodsItemInput {
   expiredDate: string
   discountType: DiscountType | null
   discountValue: number | null
+  marginSource: MarginSource
+  marginType: MarginType | null
+  marginValue: number | null
 }
 
 export interface ReceiveGoodsInput {
@@ -90,6 +115,7 @@ export interface ReceiveGoodsInput {
 export function receiveGoodsItemFromPoItem(poItem: PurchaseOrderItem): ReceiveGoodsItemInput {
   return {
     purchaseOrderItemId: poItem.id,
+    itemId: poItem.itemId,
     itemName: poItem.itemName,
     remainingQuantity: poItem.quantity - poItem.receivedQuantity,
     unitId: poItem.unitId,
@@ -99,6 +125,9 @@ export function receiveGoodsItemFromPoItem(poItem: PurchaseOrderItem): ReceiveGo
     expiredDate: '',
     discountType: null,
     discountValue: null,
+    marginSource: 'DEFAULT',
+    marginType: null,
+    marginValue: null,
   }
 }
 

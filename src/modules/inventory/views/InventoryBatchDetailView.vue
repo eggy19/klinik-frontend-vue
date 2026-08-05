@@ -197,7 +197,7 @@ onMounted(load)
 }
 
 .batch-detail__section-title {
-  font-size: var(--font-base);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-heading);
   color: var(--text);
 }

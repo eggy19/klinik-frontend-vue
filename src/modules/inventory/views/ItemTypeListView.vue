@@ -14,6 +14,12 @@ const store = useItemTypeStore()
 const confirm = useConfirm()
 const toast = useToastFeedback()
 
+const PROTECTED_CODE = 'MEDICINE'
+
+function isProtected(item: ItemType) {
+  return item.code?.toUpperCase() === PROTECTED_CODE
+}
+
 const columns: DataTableColumn[] = [
   { field: 'code', header: 'Kode' },
   { field: 'name', header: 'Nama Tipe' },
@@ -34,6 +40,10 @@ function openCreate() {
 }
 
 function openEdit(item: ItemType) {
+  if (isProtected(item)) {
+    toast.error(`Tipe item "${item.name}" tidak dapat diubah.`)
+    return
+  }
   editingId.value = item.id
   const { id: _id, ...rest } = item
   formInitial.value = { ...rest }
@@ -58,6 +68,10 @@ async function onSubmit(input: ItemTypeInput) {
 }
 
 function confirmDelete(item: ItemType) {
+  if (isProtected(item)) {
+    toast.error(`Tipe item "${item.name}" tidak dapat dihapus.`)
+    return
+  }
   confirm.require({
     header: 'Hapus Tipe Item',
     message: `Hapus "${item.name}"? Tindakan ini tidak dapat dibatalkan.`,
@@ -112,6 +126,8 @@ onMounted(store.fetchAll)
             variant="ghost"
             rounded
             aria-label="Edit"
+            :disabled="isProtected(data)"
+            :title="isProtected(data) ? 'Tipe bawaan tidak dapat diubah' : undefined"
             @click="openEdit(data)"
           />
           <BaseButton
@@ -120,6 +136,8 @@ onMounted(store.fetchAll)
             text
             rounded
             aria-label="Hapus"
+            :disabled="isProtected(data)"
+            :title="isProtected(data) ? 'Tipe bawaan tidak dapat dihapus' : undefined"
             @click="confirmDelete(data)"
           />
         </template>

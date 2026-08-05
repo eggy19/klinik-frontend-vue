@@ -1,0 +1,110 @@
+// Compact density override (docs/02-design-system.md).
+// Memaksa font-size 0.8125rem (13px) pada komponen form/table/PrimeVue yang benar-benar
+// dipakai di aplikasi. !important dipakai agar menang melawan utility class Tailwind &
+// style scoped komponen (docs/06).
+//
+// Sengaja TIDAK memakai selector generic `*` / `body *` — heading (h1-h6) dan elemen
+// display besar (BaseCard title, BaseSummaryCard value, dsb.) TIDAK disentuh di sini,
+// supaya hierarki visual heading tetap terjaga.
+
+$compact-size: 0.8125rem; // 13px — base compact
+$badge-size: 0.75rem; // 12px — badge/tag
+$caption-size: 0.625rem; // 10px — caption/small/footnote
+
+// --- 1. Native form elements & native table ---
+input,
+select,
+textarea,
+button,
+table,
+th,
+td,
+caption,
+label {
+  font-size: $compact-size !important;
+}
+
+// --- 2. PrimeVue: input & pemilihan ---
+.p-inputtext,
+.p-select,
+.p-select-label,
+.p-select-overlay,
+.p-select-list,
+.p-select-option,
+.p-multiselect,
+.p-multiselect-label,
+.p-multiselect-overlay,
+.p-multiselect-list,
+.p-multiselect-option,
+.p-password,
+.p-password-input,
+.p-datepicker,
+.p-datepicker-input,
+.p-datepicker-panel,
+.p-iconfield,
+.p-inputicon {
+  font-size: $compact-size !important;
+}
+
+// --- 3. PrimeVue: tombol ---
+.p-button,
+.p-button-label {
+  font-size: $compact-size !important;
+}
+
+// --- 4. PrimeVue: tabel (DataTable) ---
+.p-datatable,
+.p-datatable-thead > tr > th,
+.p-datatable-tbody > tr > td,
+.p-datatable-tfoot,
+.p-paginator,
+.p-paginator-page,
+.p-paginator-current {
+  font-size: $compact-size !important;
+}
+
+// --- 5. PrimeVue: dialog & drawer ---
+// Judul dialog/drawer (.p-dialog-title dst.) sengaja TIDAK di-override supaya tetap
+// terbaca sebagai judul (pakai ukuran default PrimeVue / --font-lg).
+.p-dialog,
+.p-dialog-content,
+.p-drawer,
+.p-drawer-content {
+  font-size: $compact-size !important;
+}
+
+// --- 6. PrimeVue: menu & tabs ---
+.p-menu,
+.p-menu-item-link,
+.p-menu-item-label,
+.p-tabs,
+.p-tablist,
+.p-tab,
+.p-tabpanels,
+.p-tabpanel {
+  font-size: $compact-size !important;
+}
+
+// --- 7. PrimeVue: toast & confirm dialog ---
+.p-toast,
+.p-toast-summary,
+.p-toast-detail,
+.p-confirmdialog {
+  font-size: $compact-size !important;
+}
+
+// --- 8. Exception: badge/tag-like → 0.75rem (12px) ---
+// .p-tag menutupi seluruh pemakaian BaseTag/StatusTag/PurchaseOrderStatusTag/
+// GoodsReceiptStatusTag/ExpiryStatusTag (semua delegasi ke BaseTag).
+.p-tag,
+.p-tag-label,
+.text-badge {
+  font-size: $badge-size !important;
+}
+
+// --- 9. Exception: caption/small-like → 0.625rem (10px) ---
+// <small> dipakai untuk pesan error field (BaseInput/BaseSelect) & beberapa view.
+small,
+.text-caption {
+  font-size: $caption-size !important;
+}

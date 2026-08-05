@@ -353,7 +353,7 @@ onMounted(load)
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: var(--font-base);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-heading);
   color: var(--text);
 }

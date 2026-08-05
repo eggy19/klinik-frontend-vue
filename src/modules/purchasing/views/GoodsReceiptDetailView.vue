@@ -174,30 +174,42 @@ onMounted(load)
         <table class="gr-detail__table">
           <thead>
             <tr>
-              <th>Item</th>
-              <th>Satuan</th>
-              <th class="gr-detail__col-num">Qty</th>
-              <th class="gr-detail__col-num">Harga</th>
-              <th class="gr-detail__col-num">Subtotal</th>
-              <th class="gr-detail__col-num">Diskon</th>
+              <th>No.</th>
+              <th>Item Description</th>
+              <th>Diterima</th>
               <th>No. Batch</th>
               <th>Kadaluarsa</th>
-              <th class="gr-detail__col-num">Total</th>
+              <th class="gr-detail__col-num">Harga Beli Per-item</th>
+              <th class="gr-detail__col-num">Diskon</th>
+              <th class="gr-detail__col-num">Total Beli</th>
+              <th>Margin</th>
+              <th class="gr-detail__col-num">Harga Jual Per-item</th>
+              <th class="gr-detail__col-num">Subtotal</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in receipt.items" :key="item.id">
-              <td>{{ item.itemName }}</td>
-              <td>{{ item.unitName }}</td>
-              <td class="gr-detail__col-num">{{ item.quantity }}</td>
+            <tr v-for="(item, i) in receipt.items" :key="item.id">
+              <td>{{ i + 1 }}</td>
+              <td>
+                <div class="gr-detail__item-name">{{ item.itemName }}</div>
+                <div class="gr-detail__item-code">{{ item.itemCode }}</div>
+              </td>
+              <td>{{ item.quantity }} {{ item.unitName }}</td>
+              <td>{{ item.batchNumber }}</td>
+              <td>{{ formatDate(item.expiredDate) }}</td>
               <td class="gr-detail__col-num">{{ formatCurrency(item.unitCost) }}</td>
-              <td class="gr-detail__col-num">{{ formatCurrency(item.subtotal) }}</td>
               <td class="gr-detail__col-num">
                 {{ item.discountAmount != null ? `− ${formatCurrency(item.discountAmount)}` : '-' }}
               </td>
-              <td>{{ item.batchNumber }}</td>
-              <td>{{ formatDate(item.expiredDate) }}</td>
               <td class="gr-detail__col-num">{{ formatCurrency(item.totalAmount) }}</td>
+              <td>
+                <span class="gr-detail__margin-badge" :class="`gr-detail__margin-badge--${item.marginSource.toLowerCase()}`">
+                  {{ item.marginSource === 'MANUAL' ? 'Manual' : 'Default' }}
+                </span>
+                {{ item.marginValue }}{{ item.marginType === 'PERCENTAGE' ? '%' : ' Rp' }}
+              </td>
+              <td class="gr-detail__col-num gr-detail__col-computed">{{ formatCurrency(item.sellingPrice) }}</td>
+              <td class="gr-detail__col-num gr-detail__col-computed">{{ formatCurrency(item.sellingPrice * item.quantity) }}</td>
             </tr>
           </tbody>
         </table>
@@ -235,7 +247,7 @@ onMounted(load)
 }
 
 .gr-detail__section-title {
-  font-size: var(--font-base);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-heading);
   color: var(--text);
 }
@@ -304,6 +316,39 @@ onMounted(load)
 
 .gr-detail__col-num {
   text-align: left;
+}
+
+.gr-detail__col-computed {
+  color: var(--primary-color);
+  font-weight: var(--font-weight-heading);
+}
+
+.gr-detail__item-name {
+  color: var(--text);
+}
+
+.gr-detail__item-code {
+  font-size: var(--font-xs);
+  color: var(--text-muted);
+}
+
+.gr-detail__margin-badge {
+  display: inline-block;
+  padding: 0 var(--space-1);
+  margin-right: var(--space-1);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-xs);
+  font-weight: var(--font-weight-heading);
+}
+
+.gr-detail__margin-badge--default {
+  background: var(--surface-100, var(--surface-50));
+  color: var(--text-muted);
+}
+
+.gr-detail__margin-badge--manual {
+  background: var(--primary-color-alpha, var(--primary-color));
+  color: var(--primary-contrast, var(--surface-0));
 }
 
 .gr-detail__totals {

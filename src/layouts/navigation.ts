@@ -42,19 +42,32 @@ export const navItems: NavItem[] = [
             icon: 'pi pi-file-edit',
             to: '/inventory/purchasing/purchase-orders',
           },
-          { label: 'Good Receipt', icon: 'pi pi-inbox', to: '/inventory/purchasing/goods-receipts' },
+          {
+            label: 'Good Receipt',
+            icon: 'pi pi-inbox',
+            to: '/inventory/purchasing/goods-receipts',
+          },
         ],
       },
       {
         label: 'Management',
         icon: 'pi pi-cog',
         children: [
-          // Stock & Stock Movement: belum ada halaman/route — menunggu modul management dibuat.
-          { label: 'Stock', icon: 'pi pi-warehouse' },
+          { label: 'Stock', icon: 'pi pi-warehouse', to: '/inventory/management/stock' },
           { label: 'Batch', icon: 'pi pi-tags', to: '/inventory/management/batch' },
-          { label: 'Stock Movement', icon: 'pi pi-arrow-right-arrow-left' },
+          {
+            label: 'Stock Movement',
+            icon: 'pi pi-arrow-right-arrow-left',
+            to: '/inventory/management/stock-movement',
+          },
+          {
+            label: 'Stock Opname',
+            icon: 'pi pi-check-square',
+            to: '/inventory/management/stock-opname',
+          },
         ],
       },
+      { label: 'Dispensing', icon: 'pi pi-heart', to: '/inventory/dispensing' },
     ],
   },
   {

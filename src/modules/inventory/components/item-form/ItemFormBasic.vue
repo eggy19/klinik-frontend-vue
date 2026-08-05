@@ -23,6 +23,13 @@ const filteredCategories = computed(() =>
   props.categories.filter((c) => c.itemTypeId === props.form.itemTypeId),
 )
 
+const selectedItemType = computed(
+  () => props.itemTypes.find((t) => t.id === props.form.itemTypeId) ?? null,
+)
+
+// Golongan Obat cuma relevan untuk tipe item Obat/MEDICINE.
+const isMedicineType = computed(() => selectedItemType.value?.code?.toUpperCase() === 'MEDICINE')
+
 // Status "perlu resep" murni turunan dari Golongan Obat yang dipilih —
 // tidak lagi diinput manual di form Item.
 const selectedDrugGroup = computed(
@@ -36,6 +43,10 @@ watch(
   },
   { immediate: true },
 )
+
+watch(isMedicineType, (isMedicine) => {
+  if (!isMedicine) props.form.drugGroupId = ''
+})
 </script>
 
 <template>
@@ -102,7 +113,7 @@ watch(
       filter
       @update:model-value="form.defaultUnitId = $event as string"
     />
-    <div class="item-form-basic__drug-group">
+    <div v-if="isMedicineType" class="item-form-basic__drug-group">
       <BaseSelect
         :model-value="form.drugGroupId"
         label="Golongan Obat"
