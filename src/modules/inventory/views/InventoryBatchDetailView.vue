@@ -3,10 +3,12 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
+import BaseSummaryCard from '@/components/base/BaseSummaryCard.vue'
 import { useToastFeedback } from '@/composables/useToastFeedback'
-import { formatCurrency, formatDate, formatDateTime } from '@/utils/format'
+import { daysUntil, formatCurrency, formatDate, formatDateTime } from '@/utils/format'
 import { batchApi } from '../api/batch.api'
 import ExpiryStatusTag from '../components/ExpiryStatusTag.vue'
+import { computeExpiryStatus } from '../types/batch'
 import type { InventoryBatch } from '../types/batch'
 
 const route = useRoute()
@@ -17,6 +19,18 @@ const batch = ref<InventoryBatch | null>(null)
 const loading = ref(false)
 
 const batchId = computed(() => route.params.id as string)
+
+/** Nilai stok batch ini (qty × harga satuan) — angka ringkas untuk stat row. */
+const totalValue = computed(() => (batch.value ? batch.value.quantity * batch.value.unitCost : 0))
+
+const expiryStat = computed(() => {
+  if (!batch.value?.expiredDate) return { value: '-', variant: 'info' as const }
+  const status = computeExpiryStatus(batch.value.expiredDate)
+  const days = daysUntil(batch.value.expiredDate)
+  const variant = status === 'EXPIRED' ? 'danger' : status === 'EXPIRING_SOON' ? 'warning' : 'success'
+  const value = days < 0 ? 'Kadaluarsa' : `${days} hari lagi`
+  return { value, variant: variant as 'danger' | 'warning' | 'success' }
+})
 
 function goBack() {
   router.push('/inventory/management/batch')
@@ -71,9 +85,16 @@ onMounted(load)
         </div>
       </BaseCard>
 
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <BaseSummaryCard title="Quantity" :value="`${batch.quantity} ${batch.unitName}`" icon="pi pi-box" variant="info" />
+        <BaseSummaryCard title="Harga Satuan" :value="formatCurrency(batch.unitCost)" icon="pi pi-tag" variant="primary" />
+        <BaseSummaryCard title="Nilai Total" :value="formatCurrency(totalValue)" icon="pi pi-wallet" variant="success" />
+        <BaseSummaryCard title="Kadaluarsa" :value="expiryStat.value" icon="pi pi-clock" :variant="expiryStat.variant" />
+      </div>
+
       <BaseCard>
         <template #header>
-          <span class="batch-detail__section-title">Informasi Item</span>
+          <span class="batch-detail__section-title">Detail Item &amp; Batch</span>
         </template>
         <dl class="batch-detail__meta">
           <div>
@@ -84,14 +105,6 @@ onMounted(load)
             <dt>Kode Item</dt>
             <dd>{{ batch.itemCode }}</dd>
           </div>
-        </dl>
-      </BaseCard>
-
-      <BaseCard>
-        <template #header>
-          <span class="batch-detail__section-title">Informasi Batch</span>
-        </template>
-        <dl class="batch-detail__meta">
           <div>
             <dt>No. Batch</dt>
             <dd>{{ batch.batchNumber }}</dd>
@@ -100,50 +113,18 @@ onMounted(load)
             <dt>Tanggal Kadaluarsa</dt>
             <dd>{{ formatDate(batch.expiredDate) }}</dd>
           </div>
-          <div>
-            <dt>Status Kadaluarsa</dt>
-            <dd><ExpiryStatusTag :expired-date="batch.expiredDate" /></dd>
-          </div>
         </dl>
       </BaseCard>
 
       <BaseCard>
         <template #header>
-          <span class="batch-detail__section-title">Informasi Quantity</span>
-        </template>
-        <dl class="batch-detail__meta">
-          <div>
-            <dt>Quantity</dt>
-            <dd>{{ batch.quantity }} {{ batch.unitName }}</dd>
-          </div>
-          <div>
-            <dt>Satuan</dt>
-            <dd>{{ batch.unitName }}</dd>
-          </div>
-          <div>
-            <dt>Harga Satuan</dt>
-            <dd>{{ formatCurrency(batch.unitCost) }}</dd>
-          </div>
-        </dl>
-      </BaseCard>
-
-      <BaseCard>
-        <template #header>
-          <span class="batch-detail__section-title">Informasi Supplier</span>
+          <span class="batch-detail__section-title">Supplier &amp; Sumber Penerimaan</span>
         </template>
         <dl class="batch-detail__meta">
           <div>
             <dt>Supplier</dt>
             <dd>{{ batch.supplierName || '-' }}</dd>
           </div>
-        </dl>
-      </BaseCard>
-
-      <BaseCard>
-        <template #header>
-          <span class="batch-detail__section-title">Sumber Penerimaan (Traceability)</span>
-        </template>
-        <dl class="batch-detail__meta">
           <div>
             <dt>Goods Receipt</dt>
             <dd>{{ batch.goodsReceiptNumber || '-' }}</dd>

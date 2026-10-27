@@ -10,8 +10,6 @@ import type { Item } from '@/modules/inventory/types/item'
 import type { Unit } from '@/modules/inventory/types/unit'
 import {
   DISCOUNT_TYPE_OPTIONS,
-  MARGIN_SOURCE_OPTIONS,
-  MARGIN_TYPE_OPTIONS,
   receiveGoodsItemFromPoItem,
   type DiscountType,
   type MarginSource,
@@ -21,6 +19,7 @@ import {
   type ReceiveGoodsItemInput,
 } from '../../types/goods-receipt'
 import type { PurchaseOrder } from '../../types/purchase-order'
+import GoodsReceiptPricingPanel from './GoodsReceiptPricingPanel.vue'
 import GoodsReceiptTotals from './GoodsReceiptTotals.vue'
 
 const props = defineProps<{
@@ -44,6 +43,12 @@ const rows = reactive<ReceiveGoodsItemInput[]>(
     .filter((i) => i.quantity - i.receivedQuantity > 0)
     .map((i) => receiveGoodsItemFromPoItem(i)),
 )
+
+/** Status expand/collapse panel Pricing Information per baris (default tertutup, spec §6). */
+const expandedPricing = reactive<Record<string, boolean>>({})
+function togglePricing(row: ReceiveGoodsItemInput, value: boolean) {
+  expandedPricing[row.purchaseOrderItemId] = value
+}
 
 const unitOptionsByItem = reactive<Record<string, Unit[]>>({})
 // Data item (marginType/marginValue/prescriptionRequired) dipakai untuk resolve
@@ -194,6 +199,9 @@ const previewTotals = computed(() => {
 
   return { subtotal, discountAmount, discountLabel, taxAmount, grandTotal }
 })
+
+/** Jumlah kolom tabel utama (purchasing-only) — dipakai sebagai colspan baris Pricing Information. */
+const mainColumnCount = computed(() => 8 + (discountMode.value === 'PER_ITEM' ? 1 : 0))
 
 async function loadUnitOptions(itemId: string) {
   if (unitOptionsByItem[itemId]) return
@@ -371,24 +379,25 @@ onMounted(async () => {
         </div>
       </div>
 
+      <h4 class="gr-form__section-title">Item Diterima</h4>
+
       <table class="gr-form__table">
         <thead>
           <tr>
             <th>No.</th>
             <th>Item Description</th>
-            <th>Ordered</th>
-            <th>Received</th>
+            <th>Qty PO</th>
+            <th>Qty Diterima</th>
             <th>Expired</th>
             <th>No. Batch</th>
             <th v-if="discountMode === 'PER_ITEM'">Diskon</th>
-            <th>Margin</th>
-            <th class="gr-form__col-num">Harga Beli Per-item</th>
-            <th class="gr-form__col-num">Harga per-item dengan margin</th>
-            <th class="gr-form__col-num">Subtotal</th>
+            <th class="gr-form__col-num">Harga Beli</th>
+            <th class="gr-form__col-num">Total Pembelian</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(row, i) in rows" :key="row.purchaseOrderItemId">
+          <template v-for="(row, i) in rows" :key="row.purchaseOrderItemId">
+          <tr>
             <td>{{ i + 1 }}</td>
             <td>
               <div class="gr-form__item-name">{{ row.itemName }}</div>
@@ -478,54 +487,6 @@ onMounted(async () => {
                 </p>
               </div>
             </td>
-            <td>
-              <div class="gr-form__cell-stack">
-                <BaseSelect
-                  :model-value="row.marginSource"
-                  :options="MARGIN_SOURCE_OPTIONS"
-                  option-label="label"
-                  option-value="value"
-                  @update:model-value="onRowMarginSourceChange(row, $event as MarginSource)"
-                />
-                <template v-if="row.marginSource === 'MANUAL'">
-                  <BaseSelect
-                    :model-value="row.marginType"
-                    :options="MARGIN_TYPE_OPTIONS"
-                    option-label="label"
-                    option-value="value"
-                    @update:model-value="row.marginType = $event as MarginType"
-                  />
-                  <input
-                    v-if="row.marginType === 'FIXED'"
-                    type="text"
-                    inputmode="decimal"
-                    class="gr-form__input"
-                    :value="formatNominalInput(row.marginValue)"
-                    @input="row.marginValue = parseNominalInput(($event.target as HTMLInputElement).value)"
-                  />
-                  <input
-                    v-else
-                    type="number"
-                    class="gr-form__input"
-                    :value="row.marginValue ?? ''"
-                    min="0"
-                    step="any"
-                    @input="
-                      row.marginValue =
-                        ($event.target as HTMLInputElement).value === ''
-                          ? null
-                          : Number(($event.target as HTMLInputElement).value)
-                    "
-                  />
-                  <p v-if="errors[`items.${i}.marginValue`]" class="gr-form__error">
-                    {{ errors[`items.${i}.marginValue`] }}
-                  </p>
-                </template>
-                <p v-else class="gr-form__hint">
-                  {{ resolveDefaultMargin(row.itemId).value }}{{ resolveDefaultMargin(row.itemId).type === 'PERCENTAGE' ? '%' : ' Rp' }}
-                </p>
-              </div>
-            </td>
             <td class="gr-form__col-num">
               <input
                 type="text"
@@ -535,9 +496,25 @@ onMounted(async () => {
                 @input="row.unitCost = parseNominalInput(($event.target as HTMLInputElement).value) ?? 0"
               />
             </td>
-            <td class="gr-form__col-num gr-form__col-computed">{{ formatCurrency(sellingPricePerUnit(row)) }}</td>
-            <td class="gr-form__col-num gr-form__col-computed">{{ formatCurrency(rowSubtotal(row)) }}</td>
+            <td class="gr-form__col-num gr-form__col-computed">{{ formatCurrency(rowActualCost(row)) }}</td>
           </tr>
+          <GoodsReceiptPricingPanel
+            :colspan="mainColumnCount"
+            :expanded="!!expandedPricing[row.purchaseOrderItemId]"
+            :margin-source="row.marginSource"
+            :margin-type="row.marginType"
+            :margin-value="row.marginValue"
+            :default-margin-type="resolveDefaultMargin(row.itemId).type"
+            :default-margin-value="resolveDefaultMargin(row.itemId).value"
+            :selling-price-per-unit="sellingPricePerUnit(row)"
+            :estimated-selling-value="rowSubtotal(row)"
+            :margin-error="errors[`items.${i}.marginValue`]"
+            @update:expanded="togglePricing(row, $event)"
+            @update:margin-source="onRowMarginSourceChange(row, $event)"
+            @update:margin-type="row.marginType = $event"
+            @update:margin-value="row.marginValue = $event"
+          />
+          </template>
         </tbody>
       </table>
 
@@ -591,6 +568,13 @@ onMounted(async () => {
 
 .gr-form__field-label {
   font-size: var(--font-sm);
+  font-weight: var(--font-weight-heading);
+  color: var(--text);
+}
+
+.gr-form__section-title {
+  margin: 0;
+  font-size: var(--font-lg);
   font-weight: var(--font-weight-heading);
   color: var(--text);
 }

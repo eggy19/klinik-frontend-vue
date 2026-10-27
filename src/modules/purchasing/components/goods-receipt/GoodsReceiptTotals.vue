@@ -9,20 +9,25 @@ import { formatCurrency } from '@/utils/format'
  * NULL-vs-zero distinction from the spec visible in the UI (never show
  * "Rp 0" for a level that wasn't used).
  */
-defineProps<{
-  subtotal: number
-  discountLabel?: string
-  discountAmount: number | null
-  taxRate: number | null
-  taxAmount: number | null
-  grandTotal: number
-}>()
+withDefaults(
+  defineProps<{
+    title?: string
+    subtotal: number
+    discountLabel?: string
+    discountAmount: number | null
+    taxRate: number | null
+    taxAmount: number | null
+    grandTotal: number
+  }>(),
+  { title: 'Ringkasan Pembelian' },
+)
 </script>
 
 <template>
   <div class="gr-totals">
+    <h4 v-if="title" class="gr-totals__title">{{ title }}</h4>
     <div class="gr-totals__row">
-      <span class="gr-totals__label">Subtotal</span>
+      <span class="gr-totals__label">Subtotal Pembelian</span>
       <span class="gr-totals__value">{{ formatCurrency(subtotal) }}</span>
     </div>
     <div v-if="discountAmount != null" class="gr-totals__row">
@@ -47,6 +52,13 @@ defineProps<{
   gap: var(--space-2);
   align-self: flex-end;
   min-width: 260px;
+}
+
+.gr-totals__title {
+  margin: 0;
+  font-size: var(--font-lg);
+  font-weight: var(--font-weight-heading);
+  color: var(--text);
 }
 
 .gr-totals__row {

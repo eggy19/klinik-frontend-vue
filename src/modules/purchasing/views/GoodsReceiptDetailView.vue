@@ -179,12 +179,9 @@ onMounted(load)
               <th>Diterima</th>
               <th>No. Batch</th>
               <th>Kadaluarsa</th>
-              <th class="gr-detail__col-num">Harga Beli Per-item</th>
+              <th class="gr-detail__col-num">Harga Beli</th>
               <th class="gr-detail__col-num">Diskon</th>
-              <th class="gr-detail__col-num">Total Beli</th>
-              <th>Margin</th>
-              <th class="gr-detail__col-num">Harga Jual Per-item</th>
-              <th class="gr-detail__col-num">Subtotal</th>
+              <th class="gr-detail__col-num">Total Pembelian</th>
             </tr>
           </thead>
           <tbody>
@@ -201,15 +198,7 @@ onMounted(load)
               <td class="gr-detail__col-num">
                 {{ item.discountAmount != null ? `− ${formatCurrency(item.discountAmount)}` : '-' }}
               </td>
-              <td class="gr-detail__col-num">{{ formatCurrency(item.totalAmount) }}</td>
-              <td>
-                <span class="gr-detail__margin-badge" :class="`gr-detail__margin-badge--${item.marginSource.toLowerCase()}`">
-                  {{ item.marginSource === 'MANUAL' ? 'Manual' : 'Default' }}
-                </span>
-                {{ item.marginValue }}{{ item.marginType === 'PERCENTAGE' ? '%' : ' Rp' }}
-              </td>
-              <td class="gr-detail__col-num gr-detail__col-computed">{{ formatCurrency(item.sellingPrice) }}</td>
-              <td class="gr-detail__col-num gr-detail__col-computed">{{ formatCurrency(item.sellingPrice * item.quantity) }}</td>
+              <td class="gr-detail__col-num gr-detail__col-computed">{{ formatCurrency(item.totalAmount) }}</td>
             </tr>
           </tbody>
         </table>
@@ -223,6 +212,40 @@ onMounted(load)
           :tax-amount="receipt.taxAmount"
           :grand-total="receipt.grandTotal"
         />
+      </BaseCard>
+
+      <BaseCard>
+        <template #header>
+          <span class="gr-detail__section-title">Pricing Information</span>
+        </template>
+        <table class="gr-detail__table">
+          <thead>
+            <tr>
+              <th>No.</th>
+              <th>Item Description</th>
+              <th>Margin</th>
+              <th class="gr-detail__col-num">Harga Jual / Item</th>
+              <th class="gr-detail__col-num">Estimasi Nilai Penjualan</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(item, i) in receipt.items" :key="item.id">
+              <td>{{ i + 1 }}</td>
+              <td>
+                <div class="gr-detail__item-name">{{ item.itemName }}</div>
+                <div class="gr-detail__item-code">{{ item.itemCode }}</div>
+              </td>
+              <td>
+                <span class="gr-detail__margin-badge" :class="`gr-detail__margin-badge--${item.marginSource.toLowerCase()}`">
+                  {{ item.marginSource === 'MANUAL' ? 'Manual' : 'Default' }}
+                </span>
+                {{ item.marginValue }}{{ item.marginType === 'PERCENTAGE' ? '%' : ' Rp' }}
+              </td>
+              <td class="gr-detail__col-num gr-detail__col-computed">{{ formatCurrency(item.sellingPrice) }}</td>
+              <td class="gr-detail__col-num gr-detail__col-computed">{{ formatCurrency(item.sellingPrice * item.quantity) }}</td>
+            </tr>
+          </tbody>
+        </table>
       </BaseCard>
     </template>
   </div>
