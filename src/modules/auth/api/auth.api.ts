@@ -2,19 +2,30 @@ import { apiClient } from '@/api/client'
 import type { ApiResponse } from '@/api/types'
 import type { LoginPayload, SessionInfo, User } from '../types/auth'
 
+// Backend lama belum mengirim field RBAC: anggap kosong (tanpa permission), bukan error.
+function normalizeUser(raw: User): User {
+  return {
+    ...raw,
+    context: raw.context ?? null,
+    roles: raw.roles ?? [],
+    permissions: raw.permissions ?? [],
+    branches: raw.branches ?? [],
+  }
+}
+
 export const authApi = {
   async login(payload: LoginPayload): Promise<User> {
     const res = await apiClient.post<ApiResponse<User>>('/auth/login', payload, {
       skipAuthRedirect: true,
     })
-    return res.data.data
+    return normalizeUser(res.data.data)
   },
 
   async me(): Promise<User> {
     const res = await apiClient.get<ApiResponse<User>>('/auth/me', {
       skipAuthRedirect: true,
     })
-    return res.data.data
+    return normalizeUser(res.data.data)
   },
 
   async logout(): Promise<void> {

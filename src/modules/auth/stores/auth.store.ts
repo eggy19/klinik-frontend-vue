@@ -10,6 +10,18 @@ export const useAuthStore = defineStore('auth', () => {
   const initialized = ref(false)
 
   const isAuthenticated = computed(() => user.value !== null)
+  const permissions = computed(() => user.value?.permissions ?? [])
+  const roles = computed(() => user.value?.roles ?? [])
+  const context = computed(() => user.value?.context ?? null)
+
+  // Hanya untuk kenyamanan tampilan; backend tetap menegakkan (BR-FE-07).
+  function can(code: string): boolean {
+    return permissions.value.includes(code)
+  }
+
+  function canAny(codes: string[]): boolean {
+    return codes.some((code) => permissions.value.includes(code))
+  }
 
   async function checkAuth() {
     try {
@@ -41,5 +53,18 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
   }
 
-  return { user, initialized, isAuthenticated, checkAuth, login, logout, clearSession }
+  return {
+    user,
+    initialized,
+    isAuthenticated,
+    permissions,
+    roles,
+    context,
+    can,
+    canAny,
+    checkAuth,
+    login,
+    logout,
+    clearSession,
+  }
 })

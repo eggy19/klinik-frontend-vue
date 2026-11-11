@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { reactive, watch } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { navItems, type NavItem } from './navigation'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
+import { filterNavItems, navItems, type NavItem } from './navigation'
 import SidebarNavItem from './SidebarNavItem.vue'
 
 withDefaults(defineProps<{ collapsed?: boolean }>(), { collapsed: false })
 const emit = defineEmits<{ navigate: [] }>()
 
 const route = useRoute()
+const authStore = useAuthStore()
+const visibleItems = computed(() => filterNavItems(navItems, authStore.can))
 const open = reactive<Record<string, boolean>>({})
 
 function isChildActive(item: NavItem): boolean {
@@ -26,7 +29,7 @@ function openActiveGroups(item: NavItem, key: string) {
 watch(
   () => route.path,
   () => {
-    navItems.forEach((item) => openActiveGroups(item, item.label))
+    visibleItems.value.forEach((item) => openActiveGroups(item, item.label))
   },
   { immediate: true },
 )
@@ -34,7 +37,7 @@ watch(
 
 <template>
   <nav class="nav">
-    <template v-for="item in navItems" :key="item.label">
+    <template v-for="item in visibleItems" :key="item.label">
       <!-- Item tunggal (punya route) -->
       <RouterLink
         v-if="item.to"
