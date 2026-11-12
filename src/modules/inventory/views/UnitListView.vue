@@ -9,10 +9,12 @@ import UnitForm from '../components/UnitForm.vue'
 import { useUnitStore } from '../stores/unit.store'
 import { emptyUnit, type Unit, type UnitInput } from '../types/unit'
 import { useToastFeedback } from '@/composables/useToastFeedback'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 
 const store = useUnitStore()
 const confirm = useConfirm()
 const toast = useToastFeedback()
+const auth = useAuthStore()
 
 const columns: DataTableColumn[] = [
   { field: 'code', header: 'Singkatan' },
@@ -35,6 +37,8 @@ function openCreate() {
 
 function openEdit(item: Unit) {
   editingId.value = item.id
+  // id dibuang dari nilai awal form
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { id: _id, ...rest } = item
   formInitial.value = { ...rest }
   dialogVisible.value = true
@@ -102,11 +106,11 @@ onMounted(store.fetchAll)
         empty-title="Belum ada data satuan"
         empty-description="Tambahkan satuan pertama, mis. Tablet atau Botol."
       >
-        <template #actions>
+        <template v-if="auth.can('inventory.master_data.manage')" #actions>
           <BaseButton label="Tambah Satuan" icon="pi pi-plus" @click="openCreate" />
         </template>
 
-        <template #row-actions="{ data }">
+        <template v-if="auth.can('inventory.master_data.manage')" #row-actions="{ data }">
           <BaseButton
             icon="pi pi-pencil"
             variant="ghost"
@@ -124,7 +128,7 @@ onMounted(store.fetchAll)
           />
         </template>
 
-        <template #empty-action>
+        <template v-if="auth.can('inventory.master_data.manage')" #empty-action>
           <BaseButton label="Tambah Satuan" icon="pi pi-plus" @click="openCreate" />
         </template>
       </BaseDataTable>

@@ -9,10 +9,12 @@ import SupplierForm from '../components/SupplierForm.vue'
 import { useSupplierStore } from '../stores/supplier.store'
 import { emptySupplier, type Supplier, type SupplierInput } from '../types/supplier'
 import { useToastFeedback } from '@/composables/useToastFeedback'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 
 const store = useSupplierStore()
 const confirm = useConfirm()
 const toast = useToastFeedback()
+const auth = useAuthStore()
 
 const columns: DataTableColumn[] = [
   { field: 'code', header: 'Kode' },
@@ -37,6 +39,8 @@ function openCreate() {
 
 function openEdit(item: Supplier) {
   editingId.value = item.id
+  // id dibuang dari nilai awal form
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { id: _id, ...rest } = item
   formInitial.value = { ...rest }
   dialogVisible.value = true
@@ -104,11 +108,11 @@ onMounted(store.fetchAll)
         empty-title="Belum ada data supplier"
         empty-description="Tambahkan supplier pertama, mis. Kimia Farma."
       >
-        <template #actions>
+        <template v-if="auth.can('inventory.supplier.manage')" #actions>
           <BaseButton label="Tambah Supplier" icon="pi pi-plus" @click="openCreate" />
         </template>
 
-        <template #row-actions="{ data }">
+        <template v-if="auth.can('inventory.supplier.manage')" #row-actions="{ data }">
           <BaseButton
             icon="pi pi-pencil"
             variant="ghost"
@@ -126,7 +130,7 @@ onMounted(store.fetchAll)
           />
         </template>
 
-        <template #empty-action>
+        <template v-if="auth.can('inventory.supplier.manage')" #empty-action>
           <BaseButton label="Tambah Supplier" icon="pi pi-plus" @click="openCreate" />
         </template>
       </BaseDataTable>

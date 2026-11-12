@@ -5,6 +5,7 @@ import { useConfirm } from 'primevue/useconfirm'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import { useToastFeedback } from '@/composables/useToastFeedback'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { formatCurrency, formatDate, formatDateTime } from '@/utils/format'
 import { goodsReceiptApi } from '../api/goods-receipt.api'
 import GoodsReceiptStatusTag from '../components/GoodsReceiptStatusTag.vue'
@@ -15,6 +16,7 @@ const route = useRoute()
 const router = useRouter()
 const toast = useToastFeedback()
 const confirm = useConfirm()
+const auth = useAuthStore()
 
 const receipt = ref<GoodsReceipt | null>(null)
 const loading = ref(false)
@@ -22,8 +24,12 @@ const verifying = ref(false)
 const deleting = ref(false)
 
 const grId = computed(() => route.params.id as string)
-const canVerify = computed(() => receipt.value?.status === 'DRAFT')
-const canDelete = computed(() => receipt.value?.status === 'DRAFT')
+const canVerify = computed(
+  () => receipt.value?.status === 'DRAFT' && auth.can('inventory.goods_receipt.verify'),
+)
+const canDelete = computed(
+  () => receipt.value?.status === 'DRAFT' && auth.can('inventory.goods_receipt.delete'),
+)
 
 /** goods_receipt.discountAmount hanya terisi untuk global discount — kalau yang
  *  dipakai item discount, receipt-level discount tetap NULL per spec §9, jadi

@@ -5,6 +5,7 @@ import BaseCurrencyInput from '@/components/base/BaseCurrencyInput.vue'
 import BaseSelect from '@/components/base/BaseSelect.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import { formatCurrency } from '@/utils/format'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useMarginSettingStore } from '../../stores/margin-setting.store'
 import { MARGIN_TYPE_OPTIONS, type ItemInput, type ItemUnitRow, type MarginType } from '../../types/item'
 import type { Unit } from '../../types/unit'
@@ -16,6 +17,10 @@ const props = defineProps<{
 }>()
 
 const marginSettingStore = useMarginSettingStore()
+const auth = useAuthStore()
+
+// Harga beli & margin per satuan disimpan lewat endpoint harga (AC-FE-03/04).
+const canManagePrice = computed(() => auth.can('inventory.item_price.manage'))
 
 onMounted(() => {
   marginSettingStore.fetch()
@@ -207,6 +212,9 @@ function marginLabel(type: MarginType, value: number): string {
     <section class="item-form-units__section">
       <h3 class="item-form-units__section-title">Satuan &amp; Harga</h3>
       <p v-if="errors?.units" class="item-form-units__error">{{ errors.units }}</p>
+      <p v-if="!canManagePrice" class="item-form-units__hint">
+        Anda tidak memiliki akses mengubah harga beli dan margin satuan.
+      </p>
 
       <div class="item-form-units__rows">
         <div v-for="(row, i) in form.units" :key="i" class="item-form-units__row-card">
@@ -303,7 +311,7 @@ function marginLabel(type: MarginType, value: number): string {
               :model-value="row.purchasePrice"
               label="Harga Beli (Rp)"
               placeholder="mis. 1.000,00"
-              :disabled="!row.purchaseEnabled"
+              :disabled="!row.purchaseEnabled || !canManagePrice"
               :error="errors?.[`units.${i}.purchasePrice`]"
               @update:model-value="row.purchasePrice = $event"
             />
@@ -319,6 +327,7 @@ function marginLabel(type: MarginType, value: number): string {
             <input
               type="checkbox"
               :checked="row.marginType !== null"
+              :disabled="!canManagePrice"
               @change="onUnitMarginToggle(row, ($event.target as HTMLInputElement).checked)"
             />
             Margin Khusus Satuan Ini — opsional
@@ -329,6 +338,7 @@ function marginLabel(type: MarginType, value: number): string {
               <span class="item-form-units__label">Jenis Margin</span>
               <BaseSelect
                 :model-value="row.marginType"
+                :disabled="!canManagePrice"
                 :options="MARGIN_TYPE_OPTIONS"
                 option-label="label"
                 option-value="value"
@@ -339,6 +349,7 @@ function marginLabel(type: MarginType, value: number): string {
               v-if="row.marginType === 'FIXED'"
               :model-value="row.marginValue"
               label="Nilai Margin (Rp)"
+              :disabled="!canManagePrice"
               @update:model-value="row.marginValue = $event"
             />
             <BaseInput
@@ -346,6 +357,7 @@ function marginLabel(type: MarginType, value: number): string {
               :model-value="row.marginValue ?? ''"
               label="Nilai Margin (%)"
               type="number"
+              :disabled="!canManagePrice"
               @update:model-value="(v: string) => onUnitMarginValueInput(row, v)"
             />
           </div>

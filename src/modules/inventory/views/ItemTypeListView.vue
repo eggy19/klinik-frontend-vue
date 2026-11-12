@@ -9,10 +9,12 @@ import ItemTypeForm from '../components/ItemTypeForm.vue'
 import { useItemTypeStore } from '../stores/item-type.store'
 import { emptyItemType, type ItemType, type ItemTypeInput } from '../types/item-type'
 import { useToastFeedback } from '@/composables/useToastFeedback'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 
 const store = useItemTypeStore()
 const confirm = useConfirm()
 const toast = useToastFeedback()
+const auth = useAuthStore()
 
 const PROTECTED_CODE = 'MEDICINE'
 
@@ -45,6 +47,8 @@ function openEdit(item: ItemType) {
     return
   }
   editingId.value = item.id
+  // id dibuang dari nilai awal form
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { id: _id, ...rest } = item
   formInitial.value = { ...rest }
   dialogVisible.value = true
@@ -116,11 +120,11 @@ onMounted(store.fetchAll)
         empty-title="Belum ada data tipe item"
         empty-description="Tambahkan tipe item pertama, mis. Medicine atau Alkes."
       >
-        <template #actions>
+        <template v-if="auth.can('inventory.master_data.manage')" #actions>
           <BaseButton label="Tambah Tipe Item" icon="pi pi-plus" @click="openCreate" />
         </template>
 
-        <template #row-actions="{ data }">
+        <template v-if="auth.can('inventory.master_data.manage')" #row-actions="{ data }">
           <BaseButton
             icon="pi pi-pencil"
             variant="ghost"
@@ -142,7 +146,7 @@ onMounted(store.fetchAll)
           />
         </template>
 
-        <template #empty-action>
+        <template v-if="auth.can('inventory.master_data.manage')" #empty-action>
           <BaseButton label="Tambah Tipe Item" icon="pi pi-plus" @click="openCreate" />
         </template>
       </BaseDataTable>

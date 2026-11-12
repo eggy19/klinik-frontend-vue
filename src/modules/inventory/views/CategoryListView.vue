@@ -10,11 +10,13 @@ import { useCategoryStore } from '../stores/category.store'
 import { useItemTypeStore } from '../stores/item-type.store'
 import { emptyCategory, type Category, type CategoryInput } from '../types/category'
 import { useToastFeedback } from '@/composables/useToastFeedback'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 
 const store = useCategoryStore()
 const itemTypeStore = useItemTypeStore()
 const confirm = useConfirm()
 const toast = useToastFeedback()
+const auth = useAuthStore()
 
 const columns: DataTableColumn[] = [
   { field: 'code', header: 'Kode' },
@@ -42,6 +44,8 @@ function openCreate() {
 
 function openEdit(item: Category) {
   editingId.value = item.id
+  // id dibuang dari nilai awal form
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { id: _id, ...rest } = item
   formInitial.value = { ...rest }
   dialogVisible.value = true
@@ -112,7 +116,7 @@ onMounted(() => {
         empty-title="Belum ada data kategori"
         empty-description="Tambahkan kategori pertama untuk mengelompokkan obat."
       >
-        <template #actions>
+        <template v-if="auth.can('inventory.master_data.manage')" #actions>
           <BaseButton label="Tambah Kategori" icon="pi pi-plus" @click="openCreate" />
         </template>
 
@@ -120,7 +124,7 @@ onMounted(() => {
           {{ itemTypeName(value) }}
         </template>
 
-        <template #row-actions="{ data }">
+        <template v-if="auth.can('inventory.master_data.manage')" #row-actions="{ data }">
           <BaseButton
             icon="pi pi-pencil"
             variant="ghost"
@@ -138,7 +142,7 @@ onMounted(() => {
           />
         </template>
 
-        <template #empty-action>
+        <template v-if="auth.can('inventory.master_data.manage')" #empty-action>
           <BaseButton label="Tambah Kategori" icon="pi pi-plus" @click="openCreate" />
         </template>
       </BaseDataTable>

@@ -5,15 +5,11 @@ import Button from 'primevue/button'
 import Menu from 'primevue/menu'
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
-import { useTenantStore } from '@/stores/tenant'
-import { useBranchStore } from '@/stores/branch'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 
 const router = useRouter()
 const app = useAppStore()
 const theme = useThemeStore()
-const tenant = useTenantStore()
-const branch = useBranchStore()
 const auth = useAuthStore()
 
 const isMobile = () => window.matchMedia('(max-width: 767px)').matches
@@ -59,8 +55,8 @@ async function onLogout() {
         @click="onMenuClick"
       />
       <div class="header__context">
-        <span class="header__tenant">{{ tenant.current.name }}</span>
-        <span class="header__branch">{{ branch.current.name }}</span>
+        <span class="header__tenant">{{ auth.context?.tenantName ?? '-' }}</span>
+        <span class="header__branch">{{ auth.context?.branchName ?? '-' }}</span>
       </div>
     </div>
 

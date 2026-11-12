@@ -7,6 +7,7 @@ import BaseButton from '@/components/base/BaseButton.vue'
 import BaseTag from '@/components/base/BaseTag.vue'
 import BaseDataTable, { type DataTableColumn } from '@/components/base/BaseDataTable.vue'
 import { formatDateTime } from '@/utils/format'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useStockOpnameStore } from '../stores/stock-opname.store'
 import {
   STOCK_OPNAME_STATUS_LABELS,
@@ -15,6 +16,7 @@ import {
 } from '../types/stock-opname'
 
 const router = useRouter()
+const auth = useAuthStore()
 const store = useStockOpnameStore()
 
 const filterStatus = ref<StockOpnameStatus | ''>('')
@@ -77,7 +79,7 @@ onMounted(() => {
   <div class="opname-list">
     <div class="opname-list__head">
       <h1 class="opname-list__title">Stock Opname</h1>
-      <BaseButton label="Buat Opname" icon="pi pi-plus" @click="goCreate" />
+      <BaseButton v-if="auth.can('inventory.stock_opname.create')" label="Buat Opname" icon="pi pi-plus" @click="goCreate" />
     </div>
 
     <BaseCard>

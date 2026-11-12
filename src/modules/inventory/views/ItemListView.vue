@@ -13,6 +13,7 @@ import { useCategoryStore } from '../stores/category.store'
 import { useUnitStore } from '../stores/unit.store'
 import { useDrugGroupStore } from '../stores/drug-group.store'
 import { useToastFeedback } from '@/composables/useToastFeedback'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import type { Item } from '../types/item'
 
 const store = useItemStore()
@@ -23,6 +24,7 @@ const drugGroupStore = useDrugGroupStore()
 const router = useRouter()
 const confirm = useConfirm()
 const toast = useToastFeedback()
+const auth = useAuthStore()
 
 // Filter cascading: pilih Tipe Item dulu, opsi Kategori mengikuti tipe terpilih.
 const filterItemTypeId = ref('')
@@ -171,7 +173,7 @@ onMounted(() => {
           />
         </template>
 
-        <template #actions>
+        <template v-if="auth.can('inventory.item.create')" #actions>
           <BaseButton
             label="Tambah Item"
             icon="pi pi-plus"
@@ -202,8 +204,12 @@ onMounted(() => {
           />
         </template>
 
-        <template #row-actions="{ data }">
+        <template
+          v-if="auth.canAny(['inventory.item.update', 'inventory.item.delete'])"
+          #row-actions="{ data }"
+        >
           <BaseButton
+            v-if="auth.can('inventory.item.update')"
             icon="pi pi-pencil"
             variant="ghost"
             rounded
@@ -211,6 +217,7 @@ onMounted(() => {
             @click="router.push(`/inventory/master-data/obat/${data.id}/edit`)"
           />
           <BaseButton
+            v-if="auth.can('inventory.item.update')"
             :icon="data.isActive ? 'pi pi-ban' : 'pi pi-check-circle'"
             :variant="data.isActive ? 'warning' : 'success'"
             text
@@ -219,6 +226,7 @@ onMounted(() => {
             @click="toggleActive(data)"
           />
           <BaseButton
+            v-if="auth.can('inventory.item.delete')"
             icon="pi pi-trash"
             variant="danger"
             text
@@ -228,7 +236,7 @@ onMounted(() => {
           />
         </template>
 
-        <template #empty-action>
+        <template v-if="auth.can('inventory.item.create')" #empty-action>
           <BaseButton
             label="Tambah Item"
             icon="pi pi-plus"

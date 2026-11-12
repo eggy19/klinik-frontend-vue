@@ -10,6 +10,7 @@ import BaseButton from '@/components/base/BaseButton.vue'
 import BaseSummaryCard from '@/components/base/BaseSummaryCard.vue'
 import BaseDataTable, { type DataTableColumn } from '@/components/base/BaseDataTable.vue'
 import { useToastFeedback } from '@/composables/useToastFeedback'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { formatCurrency, formatDate } from '@/utils/format'
 import { usePurchaseOrderStore } from '../stores/purchase-order.store'
 import PurchaseOrderStatusTag from '../components/PurchaseOrderStatusTag.vue'
@@ -19,6 +20,7 @@ const router = useRouter()
 const store = usePurchaseOrderStore()
 const confirm = useConfirm()
 const toast = useToastFeedback()
+const auth = useAuthStore()
 
 const columns: DataTableColumn[] = [
   { field: 'poNumber', header: 'No. PO' },
@@ -184,7 +186,7 @@ onMounted(() => {
         @page="onPage"
         @search="onSearch"
       >
-        <template #actions>
+        <template v-if="auth.can('inventory.purchase_order.create')" #actions>
           <BaseButton label="Buat Purchase Order" icon="pi pi-plus" @click="goCreate" />
         </template>
 
@@ -203,16 +205,16 @@ onMounted(() => {
         <template #row-actions="{ data }">
           <BaseButton icon="pi pi-eye" variant="ghost" rounded aria-label="Detail" @click="goDetail(data)" />
           <template v-if="data.status === 'DRAFT'">
-            <BaseButton icon="pi pi-pencil" variant="ghost" rounded aria-label="Edit" @click="goEdit(data)" />
-            <BaseButton icon="pi pi-send" variant="ghost" rounded aria-label="Submit" @click="doSubmit(data)" />
-            <BaseButton icon="pi pi-times" variant="danger" text rounded aria-label="Batalkan" @click="confirmCancel(data)" />
+            <BaseButton v-if="auth.can('inventory.purchase_order.create')" icon="pi pi-pencil" variant="ghost" rounded aria-label="Edit" @click="goEdit(data)" />
+            <BaseButton v-if="auth.can('inventory.purchase_order.submit')" icon="pi pi-send" variant="ghost" rounded aria-label="Submit" @click="doSubmit(data)" />
+            <BaseButton v-if="auth.can('inventory.purchase_order.cancel')" icon="pi pi-times" variant="danger" text rounded aria-label="Batalkan" @click="confirmCancel(data)" />
           </template>
           <template v-else-if="data.status === 'SUBMITTED'">
-            <BaseButton icon="pi pi-check" variant="ghost" rounded aria-label="Setujui" @click="doApprove(data)" />
+            <BaseButton v-if="auth.can('inventory.purchase_order.approve')" icon="pi pi-check" variant="ghost" rounded aria-label="Setujui" @click="doApprove(data)" />
           </template>
         </template>
 
-        <template #empty-action>
+        <template v-if="auth.can('inventory.purchase_order.create')" #empty-action>
           <BaseButton label="Buat Purchase Order" icon="pi pi-plus" @click="goCreate" />
         </template>
       </BaseDataTable>

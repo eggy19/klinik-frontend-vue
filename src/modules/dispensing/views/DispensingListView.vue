@@ -5,9 +5,11 @@ import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseDataTable, { type DataTableColumn } from '@/components/base/BaseDataTable.vue'
 import { formatDateTime } from '@/utils/format'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useDispensingStore } from '../stores/dispensing.store'
 
 const router = useRouter()
+const auth = useAuthStore()
 const store = useDispensingStore()
 
 const columns: DataTableColumn[] = [
@@ -45,7 +47,7 @@ onMounted(() => {
   <div class="disp-list">
     <div class="disp-list__head">
       <h1 class="disp-list__title">Dispensing</h1>
-      <BaseButton label="Buat Dispensing" icon="pi pi-plus" @click="goCreate" />
+      <BaseButton v-if="auth.can('inventory.dispensing.create')" label="Buat Dispensing" icon="pi pi-plus" @click="goCreate" />
     </div>
 
     <BaseCard>

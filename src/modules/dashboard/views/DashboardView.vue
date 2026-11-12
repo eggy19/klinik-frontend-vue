@@ -12,6 +12,8 @@ const auth = useAuthStore()
 const todayTransaction = 24
 
 const canSeeItems = computed(() => auth.can('inventory.item.read'))
+const canSeeTransactions = computed(() => auth.canAny(['billing.sale.read', 'billing.sale.read_all']))
+const hasCards = computed(() => canSeeItems.value || canSeeTransactions.value)
 
 onMounted(() => {
   if (canSeeItems.value && inventory.items.length === 0) inventory.fetchAll()
@@ -28,6 +30,14 @@ onMounted(() => {
       icon="pi pi-user"
       title="Belum ada akses"
       description="Akun Anda belum memiliki role di cabang ini. Hubungi admin."
+    />
+
+    <!-- Punya permission, tetapi tidak ada kartu ringkasan yang relevan -->
+    <BaseEmptyState
+      v-else-if="!hasCards"
+      icon="pi pi-th-large"
+      title="Belum ada ringkasan"
+      description="Tidak ada ringkasan yang dapat ditampilkan untuk akun Anda. Gunakan menu di samping."
     />
 
     <!-- Grid responsive: 4/3/2/1 kolom (docs/07) -->
@@ -57,6 +67,7 @@ onMounted(() => {
         :loading="inventory.loading"
       />
       <BaseSummaryCard
+        v-if="canSeeTransactions"
         title="Transaksi Hari Ini"
         :value="todayTransaction"
         icon="pi pi-shopping-cart"

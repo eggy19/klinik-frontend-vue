@@ -8,6 +8,7 @@ import BaseDataTable, { type DataTableColumn } from '@/components/base/BaseDataT
 import BaseDialog from '@/components/base/BaseDialog.vue'
 import { useSupplierStore } from '@/modules/inventory/stores/supplier.store'
 import { useToastFeedback } from '@/composables/useToastFeedback'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { formatCurrency, formatDate, formatDateTime } from '@/utils/format'
 import { usePurchaseOrderStore } from '../stores/purchase-order.store'
 import { useGoodsReceiptStore } from '../stores/goods-receipt.store'
@@ -20,6 +21,7 @@ const route = useRoute()
 const router = useRouter()
 const toast = useToastFeedback()
 const confirm = useConfirm()
+const auth = useAuthStore()
 const store = usePurchaseOrderStore()
 const goodsReceiptStore = useGoodsReceiptStore()
 const supplierStore = useSupplierStore()
@@ -33,10 +35,21 @@ const rejectSubmitting = ref(false)
 const rejectError = ref('')
 
 const poId = computed(() => route.params.id as string)
-const canEdit = computed(() => po.value?.status === 'DRAFT')
-const canSubmit = computed(() => po.value?.status === 'DRAFT')
-const canCancel = computed(() => po.value?.status === 'DRAFT')
-const canApprove = computed(() => po.value?.status === 'SUBMITTED')
+const canEdit = computed(
+  () => po.value?.status === 'DRAFT' && auth.can('inventory.purchase_order.create'),
+)
+const canSubmit = computed(
+  () => po.value?.status === 'DRAFT' && auth.can('inventory.purchase_order.submit'),
+)
+const canCancel = computed(
+  () => po.value?.status === 'DRAFT' && auth.can('inventory.purchase_order.cancel'),
+)
+const canApprove = computed(
+  () => po.value?.status === 'SUBMITTED' && auth.can('inventory.purchase_order.approve'),
+)
+const canReject = computed(
+  () => po.value?.status === 'SUBMITTED' && auth.can('inventory.purchase_order.reject'),
+)
 
 const selectedSupplier = computed(
   () => supplierStore.items.find((s) => s.id === po.value?.supplierId) ?? null,
@@ -214,7 +227,7 @@ onMounted(load)
               <BaseButton v-if="canEdit" label="Edit" icon="pi pi-pencil" variant="secondary" @click="goEdit" />
               <BaseButton v-if="canSubmit" label="Submit" icon="pi pi-send" @click="doSubmit" />
               <BaseButton v-if="canApprove" label="Setujui" icon="pi pi-check" @click="doApprove" />
-              <BaseButton v-if="canApprove" label="Tolak" icon="pi pi-times-circle" variant="danger" @click="openRejectDialog" />
+              <BaseButton v-if="canReject" label="Tolak" icon="pi pi-times-circle" variant="danger" @click="openRejectDialog" />
               <BaseButton v-if="canCancel" label="Batalkan" icon="pi pi-times" variant="danger" @click="confirmCancel" />
             </div>
           </BaseCard>

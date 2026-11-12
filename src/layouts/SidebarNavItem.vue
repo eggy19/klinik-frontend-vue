@@ -22,8 +22,12 @@ function isChildActive(item: NavItem): boolean {
   )
 }
 
+// Objek reaktif milik parent (SidebarNav); sengaja dimutasi di sini agar
+// state buka/tutup grup tetap satu sumber.
+const openState = props.open
+
 function toggle(key: string) {
-  props.open[key] = !props.open[key]
+  openState[key] = !openState[key]
 }
 </script>
 

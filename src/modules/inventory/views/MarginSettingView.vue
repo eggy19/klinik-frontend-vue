@@ -4,11 +4,14 @@ import BaseCard from '@/components/base/BaseCard.vue'
 import BaseInput from '@/components/base/BaseInput.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import { useToastFeedback } from '@/composables/useToastFeedback'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useMarginSettingStore } from '../stores/margin-setting.store'
 import { emptyMarginSetting, type MarginSetting } from '../types/margin-setting'
 
 const store = useMarginSettingStore()
 const toast = useToastFeedback()
+const auth = useAuthStore()
+const canUpdate = computed(() => auth.can('inventory.margin_setting.update'))
 
 const form = reactive<MarginSetting>(emptyMarginSetting())
 const submitting = ref(false)
@@ -23,6 +26,7 @@ watch(
 )
 
 async function onSubmit() {
+  if (!canUpdate.value) return
   submitting.value = true
   try {
     await store.save({
@@ -82,7 +86,7 @@ onMounted(() => {
         </div>
 
         <div class="margin-setting__actions">
-          <BaseButton label="Simpan" type="submit" :loading="submitting" />
+          <BaseButton v-if="canUpdate" label="Simpan" type="submit" :loading="submitting" />
         </div>
       </form>
     </BaseCard>

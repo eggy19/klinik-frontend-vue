@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import Toast from 'primevue/toast'
+import { useToast } from 'primevue/usetoast'
+import { registerToastHost } from '@/composables/useToastFeedback'
+
+// Daftarkan toast service agar interceptor API bisa menampilkan pesan 403.
+registerToastHost(useToast())
 </script>
 
 <template>

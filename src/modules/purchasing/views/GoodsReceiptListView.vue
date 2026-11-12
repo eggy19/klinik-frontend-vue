@@ -8,6 +8,7 @@ import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseDataTable, { type DataTableColumn } from '@/components/base/BaseDataTable.vue'
 import { formatCurrency, formatDateTime } from '@/utils/format'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { usePurchaseOrderStore } from '../stores/purchase-order.store'
 import { useGoodsReceiptStore } from '../stores/goods-receipt.store'
 import PurchaseOrderStatusTag from '../components/PurchaseOrderStatusTag.vue'
@@ -16,6 +17,7 @@ import type { PurchaseOrder } from '../types/purchase-order'
 import type { GoodsReceipt } from '../types/goods-receipt'
 
 const router = useRouter()
+const auth = useAuthStore()
 const poStore = usePurchaseOrderStore()
 const grStore = useGoodsReceiptStore()
 
@@ -112,7 +114,7 @@ onMounted(() => fetchReceivable())
           <PurchaseOrderStatusTag :status="data.status" />
         </template>
 
-        <template #row-actions="{ data }">
+        <template v-if="auth.can('inventory.goods_receipt.create')" #row-actions="{ data }">
           <BaseButton label="Terima Barang" icon="pi pi-inbox" size="small" @click="goReceive(data)" />
         </template>
       </BaseDataTable>

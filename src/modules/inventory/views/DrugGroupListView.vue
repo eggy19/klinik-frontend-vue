@@ -10,10 +10,12 @@ import DrugGroupForm from '../components/DrugGroupForm.vue'
 import { useDrugGroupStore } from '../stores/drug-group.store'
 import { emptyDrugGroup, type DrugGroup, type DrugGroupInput } from '../types/drug-group'
 import { useToastFeedback } from '@/composables/useToastFeedback'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 
 const store = useDrugGroupStore()
 const confirm = useConfirm()
 const toast = useToastFeedback()
+const auth = useAuthStore()
 
 const columns: DataTableColumn[] = [
   { field: 'code', header: 'Kode' },
@@ -38,6 +40,8 @@ function openCreate() {
 
 function openEdit(item: DrugGroup) {
   editingId.value = item.id
+  // id dibuang dari nilai awal form
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { id: _id, ...rest } = item
   formInitial.value = { ...rest }
   dialogVisible.value = true
@@ -107,7 +111,7 @@ onMounted(() => {
         empty-title="Belum ada data golongan obat"
         empty-description="Tambahkan golongan obat pertama, mis. Obat Bebas atau Obat Keras."
       >
-        <template #actions>
+        <template v-if="auth.can('inventory.master_data.manage')" #actions>
           <BaseButton label="Tambah Golongan Obat" icon="pi pi-plus" @click="openCreate" />
         </template>
 
@@ -119,7 +123,7 @@ onMounted(() => {
           <BaseTag :value="value ? 'Aktif' : 'Nonaktif'" :variant="value ? 'success' : 'secondary'" />
         </template>
 
-        <template #row-actions="{ data }">
+        <template v-if="auth.can('inventory.master_data.manage')" #row-actions="{ data }">
           <BaseButton
             icon="pi pi-pencil"
             variant="ghost"
@@ -137,7 +141,7 @@ onMounted(() => {
           />
         </template>
 
-        <template #empty-action>
+        <template v-if="auth.can('inventory.master_data.manage')" #empty-action>
           <BaseButton label="Tambah Golongan Obat" icon="pi pi-plus" @click="openCreate" />
         </template>
       </BaseDataTable>

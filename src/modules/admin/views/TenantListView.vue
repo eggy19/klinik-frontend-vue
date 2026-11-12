@@ -10,9 +10,12 @@ import { useAdminTenantStore } from '../stores/tenant.store'
 import { emptyTenant, type Tenant, type TenantInput } from '../types/tenant'
 import { formatDate } from '@/utils/format'
 import { useToastFeedback } from '@/composables/useToastFeedback'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
+import { apiErrorMessage } from '@/utils/api-error'
 
 const store = useAdminTenantStore()
 const toast = useToastFeedback()
+const auth = useAuthStore()
 
 const columns: DataTableColumn[] = [
   { field: 'code', header: 'Kode' },
@@ -51,8 +54,8 @@ async function onSubmit(input: TenantInput) {
       toast.success('Tenant dibuat beserta cabang default (MAIN).')
     }
     dialogVisible.value = false
-  } catch {
-    toast.error()
+  } catch (e) {
+    toast.error(apiErrorMessage(e, 'Gagal menyimpan data.'))
   } finally {
     submitting.value = false
   }
@@ -77,7 +80,7 @@ onMounted(store.fetchAll)
         empty-title="Belum ada tenant"
         empty-description="Tambahkan tenant pertama untuk memulai."
       >
-        <template #actions>
+        <template v-if="auth.can('identity.tenant.create')" #actions>
           <BaseButton label="Tambah Tenant" icon="pi pi-plus" @click="openCreate" />
         </template>
 
@@ -89,7 +92,7 @@ onMounted(store.fetchAll)
           {{ formatDate((data as Tenant).createdAt) }}
         </template>
 
-        <template #row-actions="{ data }">
+        <template v-if="auth.can('identity.tenant.update')" #row-actions="{ data }">
           <BaseButton
             icon="pi pi-pencil"
             variant="ghost"
@@ -99,7 +102,7 @@ onMounted(store.fetchAll)
           />
         </template>
 
-        <template #empty-action>
+        <template v-if="auth.can('identity.tenant.create')" #empty-action>
           <BaseButton label="Tambah Tenant" icon="pi pi-plus" @click="openCreate" />
         </template>
       </BaseDataTable>

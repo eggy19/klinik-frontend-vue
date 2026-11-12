@@ -14,12 +14,15 @@ import { useAdminTenantStore } from '../stores/tenant.store'
 import type { AdminUser, CreateUserInput, UpdateUserInput } from '../types/user'
 import { formatRelative } from '@/utils/format'
 import { useToastFeedback } from '@/composables/useToastFeedback'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
+import { apiErrorMessage } from '@/utils/api-error'
 
 const store = useAdminUserStore()
 const tenantStore = useAdminTenantStore()
 const router = useRouter()
 const confirm = useConfirm()
 const toast = useToastFeedback()
+const auth = useAuthStore()
 
 const columns: DataTableColumn[] = [
   { field: 'name', header: 'Nama' },
@@ -57,8 +60,8 @@ async function onCreate(input: CreateUserInput) {
     await store.create(input)
     dialogVisible.value = false
     toast.success('Pengguna berhasil dibuat.')
-  } catch {
-    toast.error('Gagal membuat pengguna. Periksa email belum terdaftar.')
+  } catch (e) {
+    toast.error(apiErrorMessage(e, 'Gagal membuat pengguna. Periksa email belum terdaftar.'))
   } finally {
     submitting.value = false
   }
@@ -71,8 +74,8 @@ async function onUpdate(input: UpdateUserInput) {
     await store.update(editingUser.value.id, input)
     dialogVisible.value = false
     toast.success()
-  } catch {
-    toast.error()
+  } catch (e) {
+    toast.error(apiErrorMessage(e, 'Gagal menyimpan data.'))
   } finally {
     submitting.value = false
   }
@@ -93,8 +96,8 @@ function confirmToggleStatus(user: AdminUser) {
       try {
         await store.updateStatus(user.id, deactivating ? 'inactive' : 'active')
         toast.success('Status pengguna diperbarui.')
-      } catch {
-        toast.error('Gagal memperbarui status pengguna.')
+      } catch (e) {
+        toast.error(apiErrorMessage(e, 'Gagal memperbarui status pengguna.'))
       }
     },
   })
@@ -111,8 +114,8 @@ function confirmUnlock(user: AdminUser) {
       try {
         await store.unlock(user.id)
         toast.success('Akun berhasil dibuka kuncinya.')
-      } catch {
-        toast.error('Gagal membuka kunci akun.')
+      } catch (e) {
+        toast.error(apiErrorMessage(e, 'Gagal membuka kunci akun.'))
       }
     },
   })
@@ -140,7 +143,7 @@ onMounted(() => {
         empty-title="Belum ada pengguna"
         empty-description="Tambahkan pengguna pertama untuk tenant Anda."
       >
-        <template #actions>
+        <template v-if="auth.can('identity.user.create')" #actions>
           <BaseButton label="Tambah Pengguna" icon="pi pi-plus" @click="openCreate" />
         </template>
 
@@ -179,6 +182,7 @@ onMounted(() => {
             @click="openDetail(data as AdminUser)"
           />
           <BaseButton
+            v-if="auth.can('identity.user.update')"
             icon="pi pi-pencil"
             variant="ghost"
             rounded
@@ -186,7 +190,7 @@ onMounted(() => {
             @click="openEdit(data as AdminUser)"
           />
           <BaseButton
-            v-if="(data as AdminUser).isLocked"
+            v-if="(data as AdminUser).isLocked && auth.can('identity.user.unlock')"
             icon="pi pi-unlock"
             variant="ghost"
             rounded
@@ -194,6 +198,7 @@ onMounted(() => {
             @click="confirmUnlock(data as AdminUser)"
           />
           <BaseButton
+            v-if="auth.can('identity.user.update')"
             :icon="(data as AdminUser).status === 'active' ? 'pi pi-ban' : 'pi pi-check-circle'"
             :variant="(data as AdminUser).status === 'active' ? 'danger' : 'ghost'"
             text
@@ -203,7 +208,7 @@ onMounted(() => {
           />
         </template>
 
-        <template #empty-action>
+        <template v-if="auth.can('identity.user.create')" #empty-action>
           <BaseButton label="Tambah Pengguna" icon="pi pi-plus" @click="openCreate" />
         </template>
       </BaseDataTable>

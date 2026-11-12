@@ -15,6 +15,7 @@ import { useUnitStore } from '../stores/unit.store'
 import { useSupplierStore } from '../stores/supplier.store'
 import { useDrugGroupStore } from '../stores/drug-group.store'
 import { useToastFeedback } from '@/composables/useToastFeedback'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { emptyItem, type ItemInput, type ItemUnitRow } from '../types/item'
 import ItemFormBasic from '../components/item-form/ItemFormBasic.vue'
 import ItemFormStock from '../components/item-form/ItemFormStock.vue'
@@ -24,6 +25,7 @@ import ItemFormUnits from '../components/item-form/ItemFormUnits.vue'
 const route = useRoute()
 const router = useRouter()
 const toast = useToastFeedback()
+const auth = useAuthStore()
 
 const itemTypeStore = useItemTypeStore()
 const categoryStore = useCategoryStore()
@@ -33,6 +35,9 @@ const drugGroupStore = useDrugGroupStore()
 
 const isEditMode = computed(() => !!route.params.id)
 const pageTitle = computed(() => (isEditMode.value ? 'Edit Item' : 'Tambah Item'))
+const canSave = computed(() =>
+  auth.can(isEditMode.value ? 'inventory.item.update' : 'inventory.item.create'),
+)
 
 const form = reactive<ItemInput>(emptyItem())
 const errors = reactive<Record<string, string>>({})
@@ -153,6 +158,9 @@ async function syncUnits(itemId: string) {
       await itemApi.removeUnit(itemId, before.unitLinkId)
     }
   }
+
+  // Tanpa inventory.item_price.manage, harga tidak disinkronkan (input harga dinonaktifkan).
+  if (!auth.can('inventory.item_price.manage')) return
 
   for (const row of form.units) {
     if (row.unitLinkId === null) continue
@@ -352,7 +360,7 @@ onMounted(async () => {
       <!-- Footer aksi -->
       <div class="item-form-view__footer">
         <BaseButton label="Batal" variant="ghost" @click="goBack" />
-        <BaseButton label="Simpan" :loading="submitting.value" @click="onSubmit" />
+        <BaseButton v-if="canSave" label="Simpan" :loading="submitting.value" @click="onSubmit" />
       </div>
     </template>
   </div>

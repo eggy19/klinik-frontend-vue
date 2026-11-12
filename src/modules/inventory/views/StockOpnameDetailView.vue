@@ -6,6 +6,7 @@ import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseTag from '@/components/base/BaseTag.vue'
 import { useToastFeedback } from '@/composables/useToastFeedback'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { formatDateTime } from '@/utils/format'
 import { useStockOpnameStore } from '../stores/stock-opname.store'
 import { STOCK_OPNAME_STATUS_LABELS, STOCK_OPNAME_STATUS_VARIANT } from '../types/stock-opname'
@@ -14,6 +15,7 @@ const route = useRoute()
 const router = useRouter()
 const toast = useToastFeedback()
 const confirm = useConfirm()
+const auth = useAuthStore()
 const store = useStockOpnameStore()
 
 const loading = ref(false)
@@ -21,7 +23,9 @@ const finalizing = ref(false)
 
 const opnameId = computed(() => route.params.id as string)
 const opname = computed(() => store.current)
-const canFinalize = computed(() => opname.value?.status === 'DRAFT')
+const canFinalize = computed(
+  () => opname.value?.status === 'DRAFT' && auth.can('inventory.stock_opname.finalize'),
+)
 
 function goBack() {
   router.push('/inventory/management/stock-opname')

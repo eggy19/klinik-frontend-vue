@@ -20,26 +20,38 @@ import { userApi } from '../api/user.api'
 import { useAdminTenantStore } from '../stores/tenant.store'
 import type { AdminUserDetail, UpdateUserInput } from '../types/user'
 import { useToastFeedback } from '@/composables/useToastFeedback'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
+import { apiErrorMessage, isNotFoundError } from '@/utils/api-error'
+import BaseEmptyState from '@/components/base/BaseEmptyState.vue'
 
 const route = useRoute()
 const router = useRouter()
 const confirm = useConfirm()
 const toast = useToastFeedback()
+const auth = useAuthStore()
 const tenantStore = useAdminTenantStore()
 
 const userId = computed(() => String(route.params.id))
 const detail = ref<AdminUserDetail | null>(null)
 const loading = ref(false)
+// 404 dari Gateway: user tidak ada atau di luar scope tenant (BR-D1C-02).
+const notFound = ref(false)
 
 const editVisible = ref(false)
 const submitting = ref(false)
 
 async function fetchDetail() {
   loading.value = true
+  notFound.value = false
   try {
     detail.value = await userApi.getUser(userId.value)
-  } catch {
-    toast.error('Gagal memuat detail pengguna.')
+  } catch (e) {
+    if (isNotFoundError(e)) {
+      detail.value = null
+      notFound.value = true
+    } else {
+      toast.error('Gagal memuat detail pengguna.')
+    }
   } finally {
     loading.value = false
   }
@@ -52,8 +64,8 @@ async function onUpdate(input: UpdateUserInput) {
     editVisible.value = false
     toast.success()
     await fetchDetail()
-  } catch {
-    toast.error()
+  } catch (e) {
+    toast.error(apiErrorMessage(e, 'Gagal menyimpan data.'))
   } finally {
     submitting.value = false
   }
@@ -76,8 +88,8 @@ function confirmToggleStatus() {
         await userApi.updateStatus(userId.value, deactivating ? 'inactive' : 'active')
         toast.success('Status pengguna diperbarui.')
         await fetchDetail()
-      } catch {
-        toast.error('Gagal memperbarui status pengguna.')
+      } catch (e) {
+        toast.error(apiErrorMessage(e, 'Gagal memperbarui status pengguna.'))
       }
     },
   })
@@ -95,8 +107,8 @@ function confirmUnlock() {
       try {
         detail.value = await userApi.unlockUser(userId.value)
         toast.success('Akun berhasil dibuka kuncinya.')
-      } catch {
-        toast.error('Gagal membuka kunci akun.')
+      } catch (e) {
+        toast.error(apiErrorMessage(e, 'Gagal membuka kunci akun.'))
       }
     },
   })
@@ -136,15 +148,22 @@ onMounted(() => {
           </div>
         </div>
         <div class="user-detail__actions">
-          <BaseButton label="Edit" icon="pi pi-pencil" variant="secondary" @click="editVisible = true" />
           <BaseButton
-            v-if="detail.security?.isLocked"
+            v-if="auth.can('identity.user.update')"
+            label="Edit"
+            icon="pi pi-pencil"
+            variant="secondary"
+            @click="editVisible = true"
+          />
+          <BaseButton
+            v-if="detail.security?.isLocked && auth.can('identity.user.unlock')"
             label="Buka Kunci"
             icon="pi pi-unlock"
             variant="warning"
             @click="confirmUnlock"
           />
           <BaseButton
+            v-if="auth.can('identity.user.update')"
             :label="detail.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'"
             :icon="detail.status === 'active' ? 'pi pi-ban' : 'pi pi-check-circle'"
             :variant="detail.status === 'active' ? 'danger' : 'success'"
@@ -157,8 +176,8 @@ onMounted(() => {
         <TabList>
           <Tab value="security">Keamanan</Tab>
           <Tab value="branches">Cabang</Tab>
-          <Tab value="sessions">Sesi Aktif</Tab>
-          <Tab value="history">Riwayat Login</Tab>
+          <Tab v-if="auth.can('identity.session.read')" value="sessions">Sesi Aktif</Tab>
+          <Tab v-if="auth.can('identity.login_history.read')" value="history">Riwayat Login</Tab>
         </TabList>
         <TabPanels>
           <TabPanel value="security">
@@ -193,7 +212,7 @@ onMounted(() => {
             </table>
           </TabPanel>
 
-          <TabPanel value="sessions">
+          <TabPanel v-if="auth.can('identity.session.read')" value="sessions">
             <SessionTable
               :user-id="detail.id"
               :show-user-column="false"
@@ -201,7 +220,7 @@ onMounted(() => {
             />
           </TabPanel>
 
-          <TabPanel value="history">
+          <TabPanel v-if="auth.can('identity.login_history.read')" value="history">
             <LoginHistoryTable
               :filters="{ userId: detail.id }"
               :show-user-column="false"
@@ -214,6 +233,22 @@ onMounted(() => {
 
     <BaseCard v-else-if="loading">
       <p class="user-detail__loading">Memuat detail pengguna…</p>
+    </BaseCard>
+
+    <BaseCard v-else-if="notFound">
+      <BaseEmptyState
+        icon="pi pi-user-minus"
+        title="Pengguna tidak ditemukan"
+        description="Pengguna tidak ada atau berada di luar cakupan akses Anda."
+      >
+        <template #action>
+          <BaseButton
+            label="Kembali ke daftar pengguna"
+            variant="secondary"
+            @click="router.push({ name: 'admin-user' })"
+          />
+        </template>
+      </BaseEmptyState>
     </BaseCard>
 
     <BaseDialog v-model:visible="editVisible" header="Edit Pengguna">

@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { notifyForbidden } from '@/composables/useToastFeedback'
 
 // Flag custom per-request agar interceptor 401 di bawah tidak mengambil alih
 // endpoint yang sudah menangani 401-nya sendiri (login, me, logout saat bootstrap).
@@ -46,6 +47,10 @@ apiClient.interceptors.response.use(
         router.push('/login')
       }
     }
+    // BR-FE-07: 403 hanya menampilkan pesan seragam, tanpa logout.
+    // Dilewati untuk endpoint auth (skipAuthRedirect): /auth/login 403 (akun nonaktif)
+    // sudah menampilkan pesan di formnya sendiri.
+    if (error.response?.status === 403 && !error.config?.skipAuthRedirect) notifyForbidden()
     return Promise.reject(error)
   },
 )

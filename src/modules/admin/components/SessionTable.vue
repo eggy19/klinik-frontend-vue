@@ -10,6 +10,8 @@ import type { AdminSession } from '../types/session'
 import { formatDateTime, formatRelative } from '@/utils/format'
 import { formatUserAgent } from '@/utils/user-agent'
 import { useToastFeedback } from '@/composables/useToastFeedback'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
+import { apiErrorMessage } from '@/utils/api-error'
 
 /**
  * Tabel sesi (server-side pagination), reusable: dipakai halaman Sesi Aktif
@@ -30,6 +32,7 @@ const emit = defineEmits<{
 
 const confirm = useConfirm()
 const toast = useToastFeedback()
+const auth = useAuthStore()
 
 const items = ref<AdminSession[]>([])
 const meta = ref<PaginationMeta>({ page: 1, limit: 20, total: 0, totalPages: 0 })
@@ -79,8 +82,8 @@ function confirmRevoke(session: AdminSession) {
         toast.success('Sesi berhasil dicabut.')
         emit('revoked', session)
         await fetch()
-      } catch {
-        toast.error('Gagal mencabut sesi.')
+      } catch (e) {
+        toast.error(apiErrorMessage(e, 'Gagal mencabut sesi.'))
       }
     },
   })
@@ -148,7 +151,7 @@ defineExpose({ refresh: () => fetch() })
       {{ formatDateTime((data as AdminSession).expiresAt) }}
     </template>
 
-    <template #row-actions="{ data }">
+    <template v-if="auth.can('identity.session.revoke')" #row-actions="{ data }">
       <BaseButton
         icon="pi pi-sign-out"
         variant="danger"

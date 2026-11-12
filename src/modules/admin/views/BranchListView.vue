@@ -12,10 +12,13 @@ import { useAdminTenantStore } from '../stores/tenant.store'
 import { emptyBranch, type Branch, type BranchInput } from '../types/branch'
 import { formatDate } from '@/utils/format'
 import { useToastFeedback } from '@/composables/useToastFeedback'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
+import { apiErrorMessage } from '@/utils/api-error'
 
 const store = useAdminBranchStore()
 const tenantStore = useAdminTenantStore()
 const toast = useToastFeedback()
+const auth = useAuthStore()
 
 const columns: DataTableColumn[] = [
   { field: 'tenantName', header: 'Tenant' },
@@ -73,8 +76,8 @@ async function onSubmit(input: BranchInput) {
     }
     dialogVisible.value = false
     toast.success()
-  } catch {
-    toast.error()
+  } catch (e) {
+    toast.error(apiErrorMessage(e, 'Gagal menyimpan data.'))
   } finally {
     submitting.value = false
   }
@@ -119,7 +122,7 @@ onMounted(() => {
           />
         </template>
 
-        <template #actions>
+        <template v-if="auth.can('identity.branch.create')" #actions>
           <BaseButton label="Tambah Cabang" icon="pi pi-plus" @click="openCreate" />
         </template>
 
@@ -131,7 +134,7 @@ onMounted(() => {
           {{ formatDate((data as Branch).createdAt) }}
         </template>
 
-        <template #row-actions="{ data }">
+        <template v-if="auth.can('identity.branch.update')" #row-actions="{ data }">
           <BaseButton
             icon="pi pi-pencil"
             variant="ghost"
@@ -141,7 +144,7 @@ onMounted(() => {
           />
         </template>
 
-        <template #empty-action>
+        <template v-if="auth.can('identity.branch.create')" #empty-action>
           <BaseButton label="Tambah Cabang" icon="pi pi-plus" @click="openCreate" />
         </template>
       </BaseDataTable>
