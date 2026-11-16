@@ -10,7 +10,7 @@ const emit = defineEmits<{ navigate: [] }>()
 
 const route = useRoute()
 const authStore = useAuthStore()
-const visibleItems = computed(() => filterNavItems(navItems, authStore.can))
+const visibleItems = computed(() => filterNavItems(navItems, authStore.can, authStore.canAny))
 const open = reactive<Record<string, boolean>>({})
 
 function isChildActive(item: NavItem): boolean {

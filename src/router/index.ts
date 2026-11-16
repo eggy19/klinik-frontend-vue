@@ -6,8 +6,11 @@ declare module 'vue-router' {
     title?: string
     public?: boolean
     layout?: string
-    /** Permission yang dibutuhkan (spec prasyarat-kasir §7.5.6); kosong = tidak dibatasi. */
-    permission?: string
+    /**
+     * Permission yang dibutuhkan (spec prasyarat-kasir §7.5.6); kosong = tidak dibatasi.
+     * Array = cukup salah satu (BR-MN-02).
+     */
+    permission?: string | string[]
   }
 }
 
@@ -30,6 +33,51 @@ const routes: RouteRecordRaw[] = [
     name: 'forbidden',
     component: () => import('@/modules/auth/views/ForbiddenView.vue'),
     meta: { title: 'Akses Ditolak' },
+  },
+  // Kasir (billing-mvp-spec §5.12, path Inggris sesuai QB-02).
+  {
+    path: '/cashier',
+    redirect: '/cashier/shift',
+    children: [
+      {
+        path: 'shift',
+        name: 'cashier-shift',
+        component: () => import('@/modules/billing/views/CashierShiftView.vue'),
+        meta: { title: 'Shift Saya', permission: 'billing.shift.open' },
+      },
+      {
+        path: 'pos',
+        name: 'cashier-pos',
+        component: () => import('@/modules/billing/views/CashierPosView.vue'),
+        meta: { title: 'Layar POS', permission: 'billing.sale.create' },
+      },
+      // Riwayat Penjualan & Daftar Shift: halaman dikerjakan di BL-20. Route didaftarkan
+      // lebih dulu agar guard permission berlaku (BR-MN-07); belum ada menu sidebar-nya.
+      {
+        path: 'sales',
+        name: 'cashier-sales',
+        component: () => import('@/modules/billing/views/CashierComingSoonView.vue'),
+        meta: { title: 'Riwayat Penjualan', permission: ['billing.sale.read', 'billing.sale.read_all'] },
+      },
+      {
+        path: 'sales/:id',
+        name: 'cashier-sale-detail',
+        component: () => import('@/modules/billing/views/CashierComingSoonView.vue'),
+        meta: { title: 'Detail Penjualan', permission: ['billing.sale.read', 'billing.sale.read_all'] },
+      },
+      {
+        path: 'shifts',
+        name: 'cashier-shifts',
+        component: () => import('@/modules/billing/views/CashierComingSoonView.vue'),
+        meta: { title: 'Daftar Shift', permission: 'billing.shift.read_all' },
+      },
+      {
+        path: 'shifts/:id',
+        name: 'cashier-shift-detail',
+        component: () => import('@/modules/billing/views/CashierComingSoonView.vue'),
+        meta: { title: 'Detail Shift', permission: 'billing.shift.read_all' },
+      },
+    ],
   },
   // Inventory sebagai menu induk; default ke sub-menu Obat.
   {
@@ -292,7 +340,7 @@ router.beforeEach(async (to) => {
 
   // Backend tetap menegakkan permission; ini hanya kenyamanan tampilan (BR-FE-07).
   const required = to.meta.permission
-  if (required && !authStore.can(required)) {
+  if (required && !(Array.isArray(required) ? authStore.canAny(required) : authStore.can(required))) {
     return { path: '/403' }
   }
 

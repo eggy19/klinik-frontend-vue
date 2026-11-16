@@ -3,13 +3,31 @@ export interface NavItem {
   icon: string
   to?: string
   children?: NavItem[]
-  /** Permission untuk menampilkan menu (spec prasyarat-kasir §7.5.6); kosong = selalu tampil. */
-  permission?: string
+  /**
+   * Permission untuk menampilkan menu (spec prasyarat-kasir §7.5.6); kosong = selalu tampil.
+   * Array = cukup salah satu (BR-MN-02, billing-mvp-spec §5.12).
+   */
+  permission?: string | string[]
 }
 
 /** Item navigasi sidebar. Modul/sub-modul baru ditambahkan di sini. */
 export const navItems: NavItem[] = [
   { label: 'Dashboard', icon: 'pi pi-home', to: '/' },
+  // Kasir (BR-PS-12, billing-mvp-spec §5.12). "Riwayat Penjualan" dan "Daftar Shift"
+  // baru ditambahkan bersama halamannya (BL-20) agar tidak ada menu ke halaman kosong.
+  {
+    label: 'Kasir',
+    icon: 'pi pi-wallet',
+    children: [
+      { label: 'Shift Saya', icon: 'pi pi-clock', to: '/cashier/shift', permission: 'billing.shift.open' },
+      {
+        label: 'Layar POS',
+        icon: 'pi pi-shopping-cart',
+        to: '/cashier/pos',
+        permission: 'billing.sale.create',
+      },
+    ],
+  },
   {
     label: 'Inventory',
     icon: 'pi pi-box',
@@ -140,13 +158,20 @@ export const navItems: NavItem[] = [
  * Saring menu berdasarkan permission. Item tanpa permission selalu tampil;
  * menu induk disembunyikan bila tidak ada anak yang tampil (BR-FE-04).
  */
-export function filterNavItems(items: NavItem[], can: (code: string) => boolean): NavItem[] {
+export function filterNavItems(
+  items: NavItem[],
+  can: (code: string) => boolean,
+  canAny: (codes: string[]) => boolean = (codes) => codes.some(can),
+): NavItem[] {
   const result: NavItem[] = []
   for (const item of items) {
     if (item.children) {
-      const children = filterNavItems(item.children, can)
+      const children = filterNavItems(item.children, can, canAny)
       if (children.length > 0) result.push({ ...item, children })
-    } else if (!item.permission || can(item.permission)) {
+    } else if (
+      !item.permission ||
+      (Array.isArray(item.permission) ? canAny(item.permission) : can(item.permission))
+    ) {
       result.push(item)
     }
   }

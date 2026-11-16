@@ -1,0 +1,164 @@
+import { isAxiosError } from 'axios'
+import { apiErrorMessage } from '@/utils/api-error'
+import type { ApiLineError, CreateSalePayload } from '../types/billing'
+
+// Aturan: billing-mvp-spec §5.5 (BR-SL-02), §5.10 (BR-PS-06..10), §6.4.
+
+export const PENDING_CHECKOUT_STORAGE_KEY = 'billing.pendingCheckout'
+
+/** Satu slot per user + cabang agar pending milik orang lain tidak tertimpa. */
+function pendingSlot(userId: string, branchId: string): string {
+  return `${PENDING_CHECKOUT_STORAGE_KEY}:${userId}:${branchId}`
+}
+
+/** UUID v4 untuk header Idempotency-Key; `randomUUID` hanya ada di secure context. */
+export function newIdempotencyKey(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  const bytes = crypto.getRandomValues(new Uint8Array(16))
+  bytes[6] = (bytes[6] & 0x0f) | 0x40
+  bytes[8] = (bytes[8] & 0x3f) | 0x80
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
+
+/** Nominal dalam sen (integer) agar perhitungan uang tidak memakai floating point (BR-SL-15). */
+export function toCents(value: number): number {
+  return Math.round(value * 100)
+}
+
+export function fromCents(cents: number): number {
+  return cents / 100
+}
+
+/** Transaksi yang dikirim tetapi belum mendapat jawaban pasti (BR-PS-06). */
+export interface PendingCheckout {
+  key: string
+  userId: string
+  branchId: string
+  payload: CreateSalePayload
+  /** Ringkasan untuk ditampilkan saat dipulihkan setelah reload/login ulang. */
+  snapshot: {
+    lines: Array<{ itemName: string; unitName: string; quantity: number; unitPrice: number }>
+    total: number
+    tendered: number
+  }
+}
+
+// sessionStorage bisa melempar (mode privat/diblokir); halaman tetap harus jalan tanpanya.
+export function loadPendingCheckout(userId: string, branchId: string): PendingCheckout | null {
+  try {
+    const raw = sessionStorage.getItem(pendingSlot(userId, branchId))
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as PendingCheckout
+    if (parsed.userId !== userId || parsed.branchId !== branchId) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+export function savePendingCheckout(pending: PendingCheckout): void {
+  try {
+    sessionStorage.setItem(pendingSlot(pending.userId, pending.branchId), JSON.stringify(pending))
+  } catch {
+    // diabaikan: tanpa storage, pemulihan setelah reload tidak tersedia
+  }
+}
+
+export function clearPendingCheckout(userId: string, branchId: string): void {
+  try {
+    sessionStorage.removeItem(pendingSlot(userId, branchId))
+  } catch {
+    // diabaikan
+  }
+}
+
+export type UncertainReason = 'timeout' | 'network' | 'unavailable' | 'unauthorized' | 'unknown'
+
+export type RejectedAction = 'none' | 'open-shift' | 'reload-prices' | 'supervisor'
+
+export type CheckoutFailure =
+  /** Belum ada jawaban pasti: pakai ulang key yang sama (BR-PS-08/09). */
+  | { kind: 'uncertain'; reason: UncertainReason }
+  /** 409 BIL_010: request sebelumnya masih diproses. Key sama. */
+  | { kind: 'processing' }
+  /** Jawaban pasti dari Billing: key diganti. */
+  | {
+      kind: 'rejected'
+      code: string | null
+      message: string
+      /** Pesan per indeks baris keranjang (dari `errors[].field = "items[i]"`). */
+      lineErrors: Record<number, string>
+      action: RejectedAction
+    }
+
+function lineErrorsOf(data: unknown): Record<number, string> {
+  const result: Record<number, string> = {}
+  const errors = (data as { errors?: ApiLineError[] } | undefined)?.errors
+  if (!Array.isArray(errors)) return result
+  for (const err of errors) {
+    const match = /^items\[(\d+)\]/.exec(err?.field ?? '')
+    if (match) result[Number(match[1])] = err.message || 'Item bermasalah.'
+  }
+  return result
+}
+
+/** Memetakan error checkout ke tindakan FE sesuai BR-PS-08. */
+export function classifyCheckoutError(error: unknown): CheckoutFailure {
+  if (!isAxiosError(error)) return { kind: 'uncertain', reason: 'unknown' }
+
+  if (!error.response) {
+    const timedOut = error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT'
+    return { kind: 'uncertain', reason: timedOut ? 'timeout' : 'network' }
+  }
+
+  const status = error.response.status
+  const data = error.response.data as { code?: string; message?: unknown } | undefined
+  const code = typeof data?.code === 'string' ? data.code : null
+  const rejected = (
+    message: string,
+    action: RejectedAction = 'none',
+    lineErrors: Record<number, string> = {},
+  ): CheckoutFailure => ({ kind: 'rejected', code, message, lineErrors, action })
+
+  if (code === 'BIL_010') return { kind: 'processing' }
+  // 503 BIL_015 maupun 503 Gateway (envelope tanpa code, F14).
+  if (status === 503) return { kind: 'uncertain', reason: 'unavailable' }
+  // Interceptor sudah mengarahkan ke login; pendingCheckout dipertahankan (BR-PS-10).
+  if (status === 401) return { kind: 'uncertain', reason: 'unauthorized' }
+
+  switch (code) {
+    case 'BIL_012':
+      return rejected('Harga berubah, periksa kembali keranjang.', 'reload-prices', lineErrorsOf(data))
+    case 'BIL_013':
+      return rejected('Stok tidak mencukupi.', 'none', lineErrorsOf(data))
+    case 'BIL_014':
+      return rejected('Ada item yang tidak dapat dijual.', 'none', lineErrorsOf(data))
+    case 'BIL_003':
+      return rejected('Buka shift terlebih dahulu.', 'open-shift')
+    case 'BIL_009':
+      return rejected('Transaksi tidak cocok, ulangi.')
+    case 'BIL_016':
+    case 'BIL_017': {
+      // Nomor/ID sale bila ada di envelope (BR-PS-08); nama field tidak dikunci spec, dicoba beberapa.
+      const d = data as Record<string, unknown> | undefined
+      const nested = (d?.data ?? d?.details ?? d?.sale) as Record<string, unknown> | undefined
+      const ref = [d?.saleNumber, d?.saleId, nested?.saleNumber, nested?.saleId, nested?.id].find(
+        (v): v is string => typeof v === 'string' && v !== '',
+      )
+      return rejected(
+        `Transaksi perlu diperiksa supervisor. Jangan ulangi pembayaran.${ref ? ` Nomor/ID transaksi: ${ref}` : ''}`,
+        'supervisor',
+      )
+    }
+    default:
+      break
+  }
+
+  if (status === 403) return rejected('Anda tidak memiliki akses.')
+  // 5xx tanpa kode dikenal: jawaban tidak pasti, aman diulang karena idempotent di kedua lapis.
+  if (status >= 500) return { kind: 'uncertain', reason: 'unknown' }
+  return rejected(apiErrorMessage(error, 'Transaksi gagal diproses.'))
+}
