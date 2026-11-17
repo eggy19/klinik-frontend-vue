@@ -51,11 +51,42 @@ function onInput(event: Event) {
   emit('update:modelValue', parsed)
 }
 
+// Seleksi saat fokus: `mouseup` pertama setelah klik-fokus (bisa ~100 ms kemudian) akan memindahkan
+// caret ke titik klik, jadi dicegah selama `selectPending`.
+let selectPending = false
+// Fokus berasal dari klik mouse (bukan Tab/autofocus/focus() programatik).
+let clickFocus = false
+
+function selectAll(input: HTMLInputElement) {
+  input.select()
+  // iOS Safari kadang mengabaikan select(); setSelectionRange andal.
+  input.setSelectionRange(0, input.value.length)
+}
+
+function onMouseDown(event: MouseEvent) {
+  if (!props.selectOnFocus) return
+  const alreadyFocused = document.activeElement === event.target
+  clickFocus = !alreadyFocused
+  // Klik di field yang sudah fokus = memosisikan caret; jangan tahan mouseup.
+  if (alreadyFocused) selectPending = false
+}
+
 function onFocus(event: FocusEvent) {
   if (!props.selectOnFocus) return
-  const input = event.target as HTMLInputElement
-  // Ditunda: pada klik mouse, mouseup setelah focus akan membatalkan seleksi yang dibuat sinkron.
-  setTimeout(() => input.select(), 0)
+  selectAll(event.target as HTMLInputElement)
+  selectPending = clickFocus
+  clickFocus = false
+}
+
+function onMouseUp(event: MouseEvent) {
+  if (!props.selectOnFocus || !selectPending) return
+  selectPending = false
+  event.preventDefault()
+  selectAll(event.target as HTMLInputElement)
+}
+
+function resetSelectPending() {
+  selectPending = false
 }
 </script>
 
@@ -76,7 +107,11 @@ function onFocus(event: FocusEvent) {
       :aria-invalid="hasError"
       class="base-field__control base-field__control--num"
       @input="onInput"
+      @mousedown="onMouseDown"
       @focus="onFocus"
+      @mouseup="onMouseUp"
+      @blur="resetSelectPending"
+      @keydown="resetSelectPending"
     />
 
     <small v-if="hasError" class="base-field__error">{{ error }}</small>
