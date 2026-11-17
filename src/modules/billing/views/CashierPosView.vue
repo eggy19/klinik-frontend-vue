@@ -104,7 +104,8 @@ async function loadPaymentMethods() {
 onMounted(() => {
   const userId = auth.user?.id
   const branchId = auth.context?.branchId
-  // BR-PS-10: transaksi yang belum pasti dipulihkan setelah reload / login ulang.
+  // BR-PS-10: transaksi yang belum pasti (localStorage) dipulihkan setelah reload / login ulang / tab baru.
+  // Hanya dibaca saat POS dibuka; tab yang sudah terbuka tidak memantau slot tab lain (tanpa event storage).
   if (userId && branchId) checkout.restore(userId, branchId)
   loadShift()
   loadPaymentMethods()
@@ -363,6 +364,7 @@ function onDone() {
       :visible="dialogVisible"
       :phase="checkout.phase.value"
       :uncertain-reason="checkout.uncertainReason.value"
+      :restored="checkout.restored.value"
       :total="cart.total.value"
       :pending="checkout.pending.value"
       :sale="checkout.sale.value"

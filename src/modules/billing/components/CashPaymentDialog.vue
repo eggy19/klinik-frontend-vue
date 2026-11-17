@@ -14,6 +14,8 @@ const props = defineProps<{
   visible: boolean
   phase: CheckoutPhase
   uncertainReason: UncertainDisplayReason
+  /** Pending dipulihkan dari storage (BR-PS-10): tombol utama "Lanjutkan", bukan "Coba lagi". */
+  restored?: boolean
   /** Total keranjang saat ini (status idle). */
   total: number
   /** Transaksi yang sedang/pernah dikirim (status sending/uncertain). */
@@ -169,11 +171,15 @@ const header = computed(() => {
         </template>
         <template v-else>
           <BaseButton
-            label="Tinggalkan transaksi"
+            :label="restored ? 'Tinggalkan' : 'Tinggalkan transaksi'"
             variant="secondary"
             @click="confirmingAbandon = true"
           />
-          <BaseButton label="Coba lagi" icon="pi pi-refresh" @click="emit('retry')" />
+          <BaseButton
+            :label="restored ? 'Lanjutkan' : 'Coba lagi'"
+            icon="pi pi-refresh"
+            @click="emit('retry')"
+          />
         </template>
       </template>
       <template v-else-if="phase === 'idle'">

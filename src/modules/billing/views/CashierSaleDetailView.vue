@@ -142,7 +142,22 @@ const itemRows = computed(() =>
         </template>
       </BaseCard>
 
-      <BaseCard title="Item">
+      <!-- AC-RW-03 (TM-H5-04): item hanya disimpan untuk PAID, jadi FAILED/NEEDS_RECONCILIATION tanpa tabel item. -->
+      <BaseCard v-if="showsFailure(sale.status)" title="Item">
+        <p class="detail__failure">
+          {{
+            sale.status === 'FAILED'
+              ? 'Transaksi gagal, tidak ada barang yang keluar'
+              : 'Barang mungkin sudah keluar, periksa dispensing Inventory dengan referensi sale ini'
+          }}
+        </p>
+        <dl v-if="sale.status === 'NEEDS_RECONCILIATION'" class="detail__rows detail__ref">
+          <div v-if="sale.saleNumber"><dt>Nomor sale</dt><dd>{{ sale.saleNumber }}</dd></div>
+          <div><dt>ID sale</dt><dd class="detail__id">{{ sale.id }}</dd></div>
+        </dl>
+      </BaseCard>
+
+      <BaseCard v-else title="Item">
         <BaseDataTable
           :value="itemRows"
           :columns="itemColumns"
@@ -159,7 +174,10 @@ const itemRows = computed(() =>
       </BaseCard>
 
       <BaseCard title="Pembayaran">
-        <dl class="detail__rows">
+        <dl v-if="showsFailure(sale.status)" class="detail__rows">
+          <div class="detail__row--big"><dt>Nilai yang dicoba</dt><dd>{{ formatCurrencyExact(sale.subtotal) }}</dd></div>
+        </dl>
+        <dl v-else class="detail__rows">
           <div v-if="sale.taxRate > 0 || sale.subtotal !== sale.grandTotal">
             <dt>Subtotal</dt><dd>{{ formatCurrencyExact(sale.subtotal) }}</dd>
           </div>
@@ -238,6 +256,23 @@ const itemRows = computed(() =>
 
 .detail__row--big dd {
   font-size: var(--font-xl);
+}
+
+.detail__failure {
+  margin: 0;
+  font-weight: var(--font-weight-heading);
+  color: var(--text);
+}
+
+.detail__ref {
+  margin-top: var(--space-4);
+}
+
+/* ID sale mudah diblok/disalin sebagai teks biasa. */
+.detail__id {
+  font-family: monospace;
+  word-break: break-all;
+  user-select: all;
 }
 
 .detail__print {

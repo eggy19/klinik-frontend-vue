@@ -32,7 +32,7 @@ export function fromCents(cents: number): number {
   return cents / 100
 }
 
-/** Transaksi yang dikirim tetapi belum mendapat jawaban pasti (BR-PS-06). */
+/** Transaksi yang dikirim tetapi belum mendapat jawaban pasti (BR-PS-06, disimpan di localStorage). */
 export interface PendingCheckout {
   key: string
   userId: string
@@ -46,22 +46,46 @@ export interface PendingCheckout {
   }
 }
 
-// sessionStorage bisa melempar (mode privat/diblokir); halaman tetap harus jalan tanpanya.
-export function loadPendingCheckout(userId: string, branchId: string): PendingCheckout | null {
+/**
+ * Baca slot dari localStorage. Migrasi sekali jalan: slot lama di sessionStorage (versi sebelum
+ * TM-H5-03) dipindah ke localStorage bila localStorage belum punya slot untuk user + cabang itu.
+ */
+function readPendingRaw(slot: string): string | null {
+  const stored = localStorage.getItem(slot)
+  if (stored) return stored
+  const legacy = sessionStorage.getItem(slot)
+  if (!legacy) return null
   try {
-    const raw = sessionStorage.getItem(pendingSlot(userId, branchId))
-    if (!raw) return null
-    const parsed: unknown = JSON.parse(raw)
-    if (!isPendingCheckout(parsed) || parsed.userId !== userId || parsed.branchId !== branchId) {
-      // Bentuk rusak / bukan milik slot ini: buang agar tidak memblokir POS (BR-PS-10).
-      clearPendingCheckout(userId, branchId)
-      return null
-    }
-    return parsed
+    localStorage.setItem(slot, legacy)
+    sessionStorage.removeItem(slot)
   } catch {
+    // migrasi gagal: slot lama tetap dipakai untuk sesi ini, jangan dibuang
+  }
+  return legacy
+}
+
+// localStorage bisa melempar (mode privat/diblokir); halaman tetap harus jalan tanpanya.
+export function loadPendingCheckout(userId: string, branchId: string): PendingCheckout | null {
+  let raw: string | null
+  try {
+    raw = readPendingRaw(pendingSlot(userId, branchId))
+  } catch {
+    // Error baca storage bukan bukti slot rusak: jangan menghapus apa pun.
+    return null
+  }
+  if (!raw) return null
+  let parsed: unknown = null
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    // JSON rusak: ditangani sama dengan bentuk rusak di bawah.
+  }
+  if (!isPendingCheckout(parsed) || parsed.userId !== userId || parsed.branchId !== branchId) {
+    // Bentuk rusak / bukan milik slot ini: buang agar tidak memblokir POS (BR-PS-10).
     clearPendingCheckout(userId, branchId)
     return null
   }
+  return parsed
 }
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -70,7 +94,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-/** Validasi bentuk data dari sessionStorage (bisa rusak / diubah manual). */
+/** Validasi bentuk data dari storage (bisa rusak / diubah manual). */
 function isPendingCheckout(value: unknown): value is PendingCheckout {
   if (!isRecord(value)) return false
   if (typeof value.key !== 'string' || !UUID_PATTERN.test(value.key)) return false
@@ -85,15 +109,35 @@ function isPendingCheckout(value: unknown): value is PendingCheckout {
 
 export function savePendingCheckout(pending: PendingCheckout): void {
   try {
-    sessionStorage.setItem(pendingSlot(pending.userId, pending.branchId), JSON.stringify(pending))
+    localStorage.setItem(pendingSlot(pending.userId, pending.branchId), JSON.stringify(pending))
   } catch {
     // diabaikan: tanpa storage, pemulihan setelah reload tidak tersedia
   }
 }
 
-export function clearPendingCheckout(userId: string, branchId: string): void {
+/** Hanya dipanggil setelah jawaban pasti atau "Tinggalkan" terkonfirmasi; logout/401 tidak (BR-PS-09/10). */
+export function clearPendingCheckout(userId: string, branchId: string, onlyKey?: string): void {
+  const slot = pendingSlot(userId, branchId)
+  // Dengan `onlyKey`: jangan hapus slot yang kini berisi key lain (milik tab lain).
+  if (onlyKey) {
+    try {
+      const raw = localStorage.getItem(slot)
+      if (raw) {
+        const stored: unknown = JSON.parse(raw)
+        if (isRecord(stored) && typeof stored.key === 'string' && stored.key !== onlyKey) return
+      }
+    } catch {
+      // tidak terbaca / rusak: lanjut menghapus
+    }
+  }
+  // Dua storage dibersihkan terpisah agar kegagalan satu tidak melewatkan yang lain.
   try {
-    sessionStorage.removeItem(pendingSlot(userId, branchId))
+    localStorage.removeItem(slot)
+  } catch {
+    // diabaikan
+  }
+  try {
+    sessionStorage.removeItem(slot)
   } catch {
     // diabaikan
   }

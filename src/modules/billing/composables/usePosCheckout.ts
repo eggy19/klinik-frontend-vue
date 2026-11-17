@@ -26,19 +26,23 @@ export function usePosCheckout() {
   const pending = ref<PendingCheckout | null>(null)
   const uncertainReason = ref<UncertainDisplayReason>('unknown')
   const sale = ref<Sale | null>(null)
+  // true = pending dipulihkan dari storage dan belum dikirim ulang di tab ini: tombol "Lanjutkan"
+  // (BR-PS-10). Begitu dikirim di tab ini, status belum pasti berikutnya memakai "Coba lagi".
+  const restored = ref(false)
 
   // Key hanya dipakai ulang untuk payload yang persis sama dan belum dijawab pasti (BR-SL-02).
   let attempt: { key: string; payloadJson: string } | null = null
   let disposed = false
   let wakeUp: (() => void) | null = null
 
-  /** Pulihkan transaksi yang belum pasti setelah reload / login ulang (BR-PS-10). */
+  /** Pulihkan transaksi yang belum pasti dari localStorage: reload, login ulang, tab baru (BR-PS-10). */
   function restore(userId: string, branchId: string) {
     const stored = loadPendingCheckout(userId, branchId)
     if (!stored) return
     pending.value = stored
     attempt = { key: stored.key, payloadJson: JSON.stringify(stored.payload) }
     uncertainReason.value = 'unknown'
+    restored.value = true
     phase.value = 'uncertain'
   }
 
@@ -57,13 +61,14 @@ export function usePosCheckout() {
     const current = pending.value
     if (!current) return null
     phase.value = 'sending'
+    restored.value = false
     uncertainReason.value = 'unknown'
     let processingTries = 0
 
     while (!disposed) {
       try {
         sale.value = await billingApi.createSale(current.key, current.payload)
-        clearPendingCheckout(current.userId, current.branchId)
+        clearPendingCheckout(current.userId, current.branchId, current.key)
         pending.value = null
         attempt = null
         phase.value = 'success'
@@ -87,7 +92,7 @@ export function usePosCheckout() {
           return null
         }
         // Jawaban pasti: key dihapus, percobaan berikutnya memakai key baru.
-        clearPendingCheckout(current.userId, current.branchId)
+        clearPendingCheckout(current.userId, current.branchId, current.key)
         pending.value = null
         attempt = null
         phase.value = 'idle'
@@ -104,7 +109,13 @@ export function usePosCheckout() {
     branchId: string,
   ): Promise<RejectedCheckout | null> {
     const payloadJson = JSON.stringify(payload)
-    const key = attempt && attempt.payloadJson === payloadJson ? attempt.key : newIdempotencyKey()
+    const isRetry = !!attempt && attempt.payloadJson === payloadJson
+    if (!isRetry && loadPendingCheckout(userId, branchId)) {
+      // Tab lain sudah menulis slot belum pasti: jangan menimpa; tampilkan dialog pemulihan (BR-PS-10).
+      restore(userId, branchId)
+      return Promise.resolve(null)
+    }
+    const key = isRetry && attempt ? attempt.key : newIdempotencyKey()
     attempt = { key, payloadJson }
     const record: PendingCheckout = { key, userId, branchId, payload, snapshot }
     pending.value = record
@@ -119,9 +130,10 @@ export function usePosCheckout() {
 
   /** "Tinggalkan transaksi" (setelah konfirmasi): hapus pending, key berikutnya baru. */
   function abandon() {
-    if (pending.value) clearPendingCheckout(pending.value.userId, pending.value.branchId)
+    if (pending.value) clearPendingCheckout(pending.value.userId, pending.value.branchId, pending.value.key)
     pending.value = null
     attempt = null
+    restored.value = false
     phase.value = 'idle'
   }
 
@@ -136,5 +148,5 @@ export function usePosCheckout() {
     wakeUp?.()
   }
 
-  return { phase, pending, uncertainReason, sale, restore, submit, retry, abandon, reset, dispose }
+  return { phase, pending, uncertainReason, restored, sale, restore, submit, retry, abandon, reset, dispose }
 }
