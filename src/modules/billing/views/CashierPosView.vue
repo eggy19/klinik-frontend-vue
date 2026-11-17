@@ -30,6 +30,7 @@ const shift = ref<Shift | null>(null)
 const shiftLoading = ref(true)
 const shiftError = ref('')
 const cashMethod = ref<PaymentMethod | null>(null)
+const searchRef = ref<InstanceType<typeof PosItemSearch> | null>(null)
 
 const paymentOpen = ref(false)
 const dialogError = ref('')
@@ -201,6 +202,7 @@ function onDone() {
   checkout.reset()
   cart.clear()
   paymentOpen.value = false
+  searchRef.value?.refresh()
 }
 </script>
 
@@ -250,7 +252,7 @@ function onDone() {
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <BaseCard title="Cari Obat">
-          <PosItemSearch :disabled="locked" @add="onAdd" />
+          <PosItemSearch ref="searchRef" :disabled="locked" @add="onAdd" />
         </BaseCard>
 
         <BaseCard title="Keranjang">

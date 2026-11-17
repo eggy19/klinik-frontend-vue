@@ -124,7 +124,7 @@ const header = computed(() => {
       <dl class="pay__rows">
         <div class="pay__row--big"><dt>Total</dt><dd>{{ formatCurrency(total) }}</dd></div>
       </dl>
-      <BaseCurrencyInput v-model="tendered" label="Uang diterima" required />
+      <BaseCurrencyInput v-model="tendered" whole-rupiah label="Uang diterima" required />
       <dl class="pay__rows">
         <div>
           <dt>Kembalian</dt>

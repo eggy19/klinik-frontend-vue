@@ -8,12 +8,8 @@ import { useMedicineStore } from '@/modules/inventory/stores/medicine.store'
 const inventory = useMedicineStore()
 const auth = useAuthStore()
 
-// Modul Billing belum masuk MVP — transaksi hari ini masih mock.
-const todayTransaction = 24
-
 const canSeeItems = computed(() => auth.can('inventory.item.read'))
-const canSeeTransactions = computed(() => auth.canAny(['billing.sale.read', 'billing.sale.read_all']))
-const hasCards = computed(() => canSeeItems.value || canSeeTransactions.value)
+const hasCards = computed(() => canSeeItems.value)
 
 onMounted(() => {
   if (canSeeItems.value && inventory.items.length === 0) inventory.fetchAll()
@@ -65,13 +61,6 @@ onMounted(() => {
         icon="pi pi-clock"
         variant="danger"
         :loading="inventory.loading"
-      />
-      <BaseSummaryCard
-        v-if="canSeeTransactions"
-        title="Transaksi Hari Ini"
-        :value="todayTransaction"
-        icon="pi pi-shopping-cart"
-        variant="success"
       />
     </div>
   </div>

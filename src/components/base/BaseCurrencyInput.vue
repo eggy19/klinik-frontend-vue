@@ -11,10 +11,13 @@ const props = withDefaults(
     required?: boolean
     disabled?: boolean
     error?: string
+    /** Rupiah bulat tanpa sen: ketik "20000" = 20000 (default: mask sen, "20000" = 200,00). */
+    wholeRupiah?: boolean
   }>(),
   {
     required: false,
     disabled: false,
+    wholeRupiah: false,
   },
 )
 
@@ -25,22 +28,23 @@ const emit = defineEmits<{
 const fieldId = useId()
 const hasError = computed(() => !!props.error)
 
-const display = ref(formatNominalInput(props.modelValue))
+const fractionDigits = computed(() => (props.wholeRupiah ? 0 : 2))
+const display = ref(formatNominalInput(props.modelValue, fractionDigits.value))
 
 // Sinkron ulang display kalau modelValue berubah dari luar (mis. reset form,
 // prefill harga dari API) — bukan dari ketikan user sendiri.
 watch(
   () => props.modelValue,
   (value) => {
-    const formatted = formatNominalInput(value)
+    const formatted = formatNominalInput(value, fractionDigits.value)
     if (formatted !== display.value) display.value = formatted
   },
 )
 
 function onInput(event: Event) {
   const raw = (event.target as HTMLInputElement).value
-  const parsed = parseNominalInput(raw)
-  display.value = formatNominalInput(parsed)
+  const parsed = parseNominalInput(raw, fractionDigits.value)
+  display.value = formatNominalInput(parsed, fractionDigits.value)
   emit('update:modelValue', parsed)
 }
 </script>

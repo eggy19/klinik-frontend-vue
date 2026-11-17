@@ -95,6 +95,14 @@ function unitReason(item: PosItem, unit: PosUnit): string {
   return item.saleRestriction === 'BLOCKED' ? REASON_TEXT.BLOCKED_DRUG_GROUP : 'Tidak dapat dijual'
 }
 
+/** Muat ulang hasil dengan query saat ini (mis. setelah checkout, agar stok tidak basi). */
+function refresh() {
+  lastQuery = ''
+  return search(query.value)
+}
+
+defineExpose({ refresh })
+
 onBeforeUnmount(() => controller?.abort())
 </script>
 

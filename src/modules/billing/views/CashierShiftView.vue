@@ -205,7 +205,7 @@ async function onClose(input: { closingCashCounted: number; closeNote: string })
     <!-- Belum ada shift: form Buka Shift -->
     <BaseCard v-else-if="canOpen" title="Buka Shift">
       <form class="shift__form" @submit.prevent="onOpen">
-        <BaseCurrencyInput v-model="openingCash" label="Modal awal (uang kembalian di laci)" required :error="cashError" />
+        <BaseCurrencyInput v-model="openingCash" whole-rupiah label="Modal awal (uang kembalian di laci)" required :error="cashError" />
         <BaseInput v-model="openNote" label="Catatan (opsional)" :error="noteError" />
         <p v-if="openError" class="shift__error">{{ openError }}</p>
         <div>

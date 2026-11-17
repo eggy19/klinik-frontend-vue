@@ -9,17 +9,18 @@ export function formatCurrency(value: number): string {
 }
 
 /** Format angka jadi string nominal id-ID (titik ribuan, koma desimal), mis. 10000 -> "10.000,00". */
-export function formatNominalInput(value: number | null | undefined): string {
+export function formatNominalInput(value: number | null | undefined, fractionDigits = 2): string {
   if (value == null) return ''
-  return value.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return value.toLocaleString('id-ID', { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits })
 }
 
-/** Parse hasil ketikan mask nominal (semua digit dianggap sen bergeser dari kanan,
- *  mis. ketik "1","0","0","0","0" -> 100,00) jadi number, atau null kalau kosong. */
-export function parseNominalInput(raw: string): number | null {
+/** Parse hasil ketikan mask nominal (default: semua digit dianggap sen bergeser dari kanan,
+ *  mis. ketik "1","0","0","0","0" -> 100,00; fractionDigits 0 = rupiah bulat, "20000" -> 20000)
+ *  jadi number, atau null kalau kosong. */
+export function parseNominalInput(raw: string, fractionDigits = 2): number | null {
   const digits = raw.replace(/\D/g, '')
   if (!digits) return null
-  return parseInt(digits, 10) / 100
+  return parseInt(digits, 10) / 10 ** fractionDigits
 }
 
 /** Format tanggal ISO / Date ke "17 Jun 2026". */
