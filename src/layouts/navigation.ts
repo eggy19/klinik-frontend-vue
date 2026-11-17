@@ -13,8 +13,7 @@ export interface NavItem {
 /** Item navigasi sidebar. Modul/sub-modul baru ditambahkan di sini. */
 export const navItems: NavItem[] = [
   { label: 'Dashboard', icon: 'pi pi-home', to: '/' },
-  // Kasir (BR-PS-12, billing-mvp-spec §5.12). "Riwayat Penjualan" dan "Daftar Shift"
-  // baru ditambahkan bersama halamannya (BL-20) agar tidak ada menu ke halaman kosong.
+  // Kasir (BR-PS-12, billing-mvp-spec §5.12).
   {
     label: 'Kasir',
     icon: 'pi pi-wallet',
@@ -25,6 +24,18 @@ export const navItems: NavItem[] = [
         icon: 'pi pi-shopping-cart',
         to: '/cashier/pos',
         permission: 'billing.sale.create',
+      },
+      {
+        label: 'Riwayat Penjualan',
+        icon: 'pi pi-receipt',
+        to: '/cashier/sales',
+        permission: ['billing.sale.read', 'billing.sale.read_all'],
+      },
+      {
+        label: 'Daftar Shift',
+        icon: 'pi pi-list',
+        to: '/cashier/shifts',
+        permission: 'billing.shift.read_all',
       },
     ],
   },

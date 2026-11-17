@@ -94,17 +94,79 @@ export interface SaleItem {
   lineTotal: number
 }
 
-/** Response checkout (data struk). Rincian lengkap dipakai BL-20; di sini yang dibutuhkan layar sukses. */
-export interface Sale {
+/** Status sale yang muncul di list/detail (§6.2); VOIDED dicadangkan. */
+export type SaleStatus = 'PENDING' | 'PAID' | 'FAILED' | 'NEEDS_RECONCILIATION' | 'VOIDED'
+
+export interface SalePayment {
+  methodCode: string
+  methodName: string
+  amount: number
+  tenderedAmount: number
+  changeAmount: number
+}
+
+/** Header/footer struk per cabang (BR-RC-04). Kosong = null. */
+export interface SaleReceiptText {
+  header: string | null
+  footer: string | null
+}
+
+/** Header sale tanpa baris/pembayaran/struk (`SaleSummary`, §7.5). */
+export interface SaleSummary {
   id: string
-  saleNumber: string
-  status: string
+  saleNumber: string | null
+  status: SaleStatus
+  sourceType: string
+  shiftId: string | null
+  shiftNumber: string | null
+  cashierUserId: string | null
+  cashierName: string | null
+  customerName: string | null
+  createdAt: string | null
+  paidAt: string | null
+  subtotal: number
+  taxRate: number
+  taxTotal: number
   grandTotal: number
   tenderedAmount: number
   changeAmount: number
-  paidAt: string | null
+  failureCode: string | null
+  failureMessage: string | null
+}
+
+/** Detail sale = response checkout = data struk (§7.5). */
+export interface Sale extends SaleSummary {
   items: SaleItem[]
+  payments: SalePayment[]
+  /** null bila response tidak memuat objek `receipt` (data struk belum lengkap). */
+  receipt: SaleReceiptText | null
   replayed: boolean
+}
+
+export interface ListParams {
+  page?: number
+  limit?: number
+  dateFrom?: string
+  dateTo?: string
+  cashierUserId?: string
+  status?: string
+}
+
+export interface SaleListParams extends ListParams {
+  /** Cari nomor penjualan. */
+  q?: string
+}
+
+export interface Pagination {
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
+export interface PagedResult<T> {
+  items: T[]
+  pagination: Pagination
 }
 
 /** Item error per baris dari Inventory yang diteruskan Billing (`field: "items[i]"`). */

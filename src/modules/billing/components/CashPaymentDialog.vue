@@ -4,6 +4,7 @@ import BaseDialog from '@/components/base/BaseDialog.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCurrencyInput from '@/components/base/BaseCurrencyInput.vue'
 import { formatCurrency } from '@/utils/format'
+import ReceiptWidthPicker from './ReceiptWidthPicker.vue'
 import type { Sale } from '../types/billing'
 import type { CheckoutPhase, UncertainDisplayReason } from '../composables/usePosCheckout'
 import { fromCents, toCents, type PendingCheckout } from '../utils/checkout'
@@ -20,6 +21,8 @@ const props = defineProps<{
   sale: Sale | null
   /** Pesan penolakan pasti yang ditampilkan di dialog (BIL_006/007/009, 400). */
   errorMessage: string
+  /** Sedang memuat data struk (cadangan GET /billing/sales/:id). */
+  printLoading?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -28,7 +31,13 @@ const emit = defineEmits<{
   retry: []
   abandon: []
   done: []
+  print: []
 }>()
+
+// Dialog terkunci saat mengirim / belum pasti: tanpa tombol X dan tanpa tutup lewat klik mask (BR-PS-09).
+// Layar sukses tetap punya X tetapi tidak tertutup tak sengaja lewat klik mask sebelum struk dicetak.
+const closable = computed(() => props.phase === 'idle' || props.phase === 'success')
+const dismissable = computed(() => props.phase === 'idle')
 
 const tendered = ref<number | null>(null)
 const confirmingAbandon = ref(false)
@@ -70,7 +79,13 @@ const header = computed(() => {
 </script>
 
 <template>
-  <BaseDialog :visible="visible" :header="header" @update:visible="onVisible">
+  <BaseDialog
+    :visible="visible"
+    :header="header"
+    :closable="closable"
+    :dismissable="dismissable"
+    @update:visible="onVisible"
+  >
     <!-- SUKSES -->
     <div v-if="phase === 'success' && sale" class="pay">
       <p class="pay__status pay__status--ok">
@@ -81,6 +96,7 @@ const header = computed(() => {
         <div><dt>Uang diterima</dt><dd>{{ formatCurrency(sale.tenderedAmount) }}</dd></div>
         <div class="pay__row--big"><dt>Kembalian</dt><dd>{{ formatCurrency(sale.changeAmount) }}</dd></div>
       </dl>
+      <ReceiptWidthPicker />
     </div>
 
     <!-- BELUM PASTI -->
@@ -124,7 +140,7 @@ const header = computed(() => {
       <dl class="pay__rows">
         <div class="pay__row--big"><dt>Total</dt><dd>{{ formatCurrency(total) }}</dd></div>
       </dl>
-      <BaseCurrencyInput v-model="tendered" whole-rupiah label="Uang diterima" required />
+      <BaseCurrencyInput v-model="tendered" whole-rupiah select-on-focus label="Uang diterima" required />
       <dl class="pay__rows">
         <div>
           <dt>Kembalian</dt>
@@ -137,6 +153,13 @@ const header = computed(() => {
 
     <template #footer>
       <template v-if="phase === 'success'">
+        <BaseButton
+          label="Cetak Struk"
+          icon="pi pi-print"
+          variant="secondary"
+          :loading="printLoading"
+          @click="emit('print')"
+        />
         <BaseButton label="Transaksi Baru" icon="pi pi-plus" @click="emit('done')" />
       </template>
       <template v-else-if="phase === 'uncertain'">

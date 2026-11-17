@@ -49,6 +49,70 @@ export function formatDateTime(value: string | Date | null | undefined): string 
   }).format(date)
 }
 
+/** Zona waktu bisnis (billing-mvp-spec BR-RC-03, KB-15). */
+const WIB = 'Asia/Jakarta'
+
+/** Komponen tanggal-jam dalam WIB (dua digit), terlepas dari zona waktu browser. */
+function wibParts(date: Date) {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: WIB,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date)
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
+  return { year: get('year'), month: get('month'), day: get('day'), hour: get('hour'), minute: get('minute') }
+}
+
+function toValidDate(value: string | Date | null | undefined): Date | null {
+  if (!value) return null
+  const date = typeof value === 'string' ? new Date(value) : value
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+/** Tanggal WIB hari ini dalam bentuk `YYYY-MM-DD` (untuk filter `date_from`/`date_to`). */
+export function todayWib(): string {
+  const p = wibParts(new Date())
+  return `${p.year}-${p.month}-${p.day}`
+}
+
+/** Tanggal-jam WIB "DD/MM/YYYY HH:mm" (struk & riwayat kasir, BR-RC-03). */
+export function formatDateTimeWib(value: string | Date | null | undefined): string {
+  const date = toValidDate(value)
+  if (!date) return '-'
+  const p = wibParts(date)
+  return `${p.day}/${p.month}/${p.year} ${p.hour}:${p.minute}`
+}
+
+/** Penanda cetak ulang WIB "DD/MM HH:mm" (BR-RC-08). */
+export function formatShortDateTimeWib(value: string | Date | null | undefined): string {
+  const date = toValidDate(value)
+  if (!date) return '-'
+  const p = wibParts(date)
+  return `${p.day}/${p.month} ${p.hour}:${p.minute}`
+}
+
+/**
+ * Nominal Rupiah tanpa simbol untuk struk: titik ribuan, desimal hanya bila bukan ,00
+ * (BR-RC-07), tanpa pembulatan. 11000 -> "11.000", 4261.26 -> "4.261,26", 5500.5 -> "5.500,50".
+ */
+export function formatReceiptAmount(value: number): string {
+  const cents = Math.round(value * 100)
+  const hasFraction = cents % 100 !== 0
+  return new Intl.NumberFormat('id-ID', {
+    minimumFractionDigits: hasFraction ? 2 : 0,
+    maximumFractionDigits: hasFraction ? 2 : 0,
+  }).format(cents / 100)
+}
+
+/** Rupiah ("Rp 11.000") dengan desimal hanya bila bukan ,00 (BR-RC-07). */
+export function formatCurrencyExact(value: number): string {
+  return `Rp ${formatReceiptAmount(value)}`
+}
+
 /** Waktu relatif berbahasa Indonesia, mis. "5 menit lalu" / "dalam 2 hari". */
 export function formatRelative(value: string | Date | null | undefined): string {
   if (!value) return '-'

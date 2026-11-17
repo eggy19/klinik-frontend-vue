@@ -3,11 +3,25 @@ import type { ApiResponse } from '@/api/types'
 import type {
   CloseShiftInput,
   CreateSalePayload,
+  ListParams,
   OpenShiftInput,
+  PagedResult,
+  Pagination,
   PaymentMethod,
   Sale,
+  SaleListParams,
+  SaleStatus,
+  SaleSummary,
   Shift,
 } from '../types/billing'
+
+/** Response list Billing: `data` array + `pagination` di level atas (BR-BL-03). */
+interface ApiListResponse {
+  success: boolean
+  message: string
+  data: Array<Record<string, unknown>>
+  pagination?: Record<string, unknown>
+}
 
 // Kontrak: dokumentasi/billing/billing-mvp-spec.md §7.5 (via Gateway /billing/*).
 // Response dibaca camelCase, body request snake_case.
@@ -55,16 +69,41 @@ function fromApiShift(raw: Record<string, unknown>): Shift {
   }
 }
 
-function fromApiSale(raw: Record<string, unknown>): Sale {
-  const items = (raw.items as Array<Record<string, unknown>> | undefined) ?? []
+function strOrNull(value: unknown): string | null {
+  return typeof value === 'string' && value !== '' ? value : null
+}
+
+/** Header sale (tanpa baris/pembayaran/struk), bentuk `SaleSummary` §7.5. Dipakai list & detail. */
+function fromApiSaleSummary(raw: Record<string, unknown>): SaleSummary {
   return {
     id: raw.id as string,
-    saleNumber: raw.saleNumber as string,
-    status: raw.status as string,
+    saleNumber: strOrNull(raw.saleNumber),
+    status: raw.status as SaleStatus,
+    sourceType: (raw.sourceType as string | undefined) ?? 'OTC',
+    shiftId: strOrNull(raw.shiftId),
+    shiftNumber: strOrNull(raw.shiftNumber),
+    cashierUserId: strOrNull(raw.cashierUserId),
+    cashierName: strOrNull(raw.cashierName),
+    customerName: strOrNull(raw.customerName),
+    createdAt: strOrNull(raw.createdAt),
+    paidAt: strOrNull(raw.paidAt),
+    subtotal: num(raw.subtotal as number | string),
+    taxRate: num(raw.taxRate as number | string),
+    taxTotal: num(raw.taxTotal as number | string),
     grandTotal: num(raw.grandTotal as number | string),
     tenderedAmount: num(raw.tenderedAmount as number | string),
     changeAmount: num(raw.changeAmount as number | string),
-    paidAt: (raw.paidAt as string | null) ?? null,
+    failureCode: strOrNull(raw.failureCode),
+    failureMessage: strOrNull(raw.failureMessage),
+  }
+}
+
+function fromApiSale(raw: Record<string, unknown>): Sale {
+  const items = (raw.items as Array<Record<string, unknown>> | undefined) ?? []
+  const payments = (raw.payments as Array<Record<string, unknown>> | undefined) ?? []
+  const receipt = raw.receipt as Record<string, unknown> | null | undefined
+  return {
+    ...fromApiSaleSummary(raw),
     replayed: raw.replayed === true,
     items: items.map((item) => ({
       lineNo: num(item.lineNo as number),
@@ -76,7 +115,41 @@ function fromApiSale(raw: Record<string, unknown>): Sale {
       unitPrice: num(item.unitPrice as number | string),
       lineTotal: num(item.lineTotal as number | string),
     })),
+    payments: payments.map((p) => ({
+      methodCode: p.methodCode as string,
+      methodName: p.methodName as string,
+      amount: num(p.amount as number | string),
+      tenderedAmount: num(p.tenderedAmount as number | string),
+      changeAmount: num(p.changeAmount as number | string),
+    })),
+    receipt:
+      receipt && typeof receipt === 'object'
+        ? { header: strOrNull(receipt.header), footer: strOrNull(receipt.footer) }
+        : null,
   }
+}
+
+function fromApiPagination(raw: Record<string, unknown> | undefined, fallbackLimit: number): Pagination {
+  return {
+    page: num(raw?.page as number | undefined) || 1,
+    limit: num(raw?.limit as number | undefined) || fallbackLimit,
+    total: num(raw?.total as number | undefined),
+    totalPages: num(raw?.totalPages as number | undefined),
+  }
+}
+
+/** Query list snake_case (§7.5); nilai kosong tidak dikirim. */
+function listQuery(params: SaleListParams): Record<string, string | number> {
+  const query: Record<string, string | number> = {
+    page: params.page ?? 1,
+    limit: params.limit ?? 20,
+  }
+  if (params.dateFrom) query.date_from = params.dateFrom
+  if (params.dateTo) query.date_to = params.dateTo
+  if (params.cashierUserId) query.cashier_user_id = params.cashierUserId
+  if (params.status) query.status = params.status
+  if (params.q?.trim()) query.q = params.q.trim()
+  return query
 }
 
 export const billingApi = {
@@ -120,5 +193,37 @@ export const billingApi = {
       timeout: CHECKOUT_TIMEOUT_MS,
     })
     return fromApiSale(res.data.data)
+  },
+
+  /** Daftar penjualan (scope read / read_all ditentukan Billing, BR-SL-12). */
+  async getSales(params: SaleListParams = {}): Promise<PagedResult<SaleSummary>> {
+    const query = listQuery(params)
+    const res = await apiClient.get<ApiListResponse>('/billing/sales', { params: query })
+    return {
+      items: res.data.data.map(fromApiSaleSummary),
+      pagination: fromApiPagination(res.data.pagination, Number(query.limit)),
+    }
+  },
+
+  /** Detail sale = data struk (§7.5). 404 `BIL_005` bila di luar scope. */
+  async getSale(id: string): Promise<Sale> {
+    const res = await apiClient.get<ApiResponse<Record<string, unknown>>>(`/billing/sales/${id}`)
+    return fromApiSale(res.data.data)
+  },
+
+  /** Daftar shift; tanggal dicocokkan ke `opened_at` (§7.5 pengecualian). */
+  async getShifts(params: ListParams = {}): Promise<PagedResult<Shift>> {
+    const query = listQuery(params)
+    const res = await apiClient.get<ApiListResponse>('/billing/shifts', { params: query })
+    return {
+      items: res.data.data.map(fromApiShift),
+      pagination: fromApiPagination(res.data.pagination, Number(query.limit)),
+    }
+  },
+
+  /** Detail shift. 404 `BIL_001` bila di luar scope (BR-SH-13). */
+  async getShift(id: string): Promise<Shift> {
+    const res = await apiClient.get<ApiResponse<Record<string, unknown>>>(`/billing/shifts/${id}`)
+    return fromApiShift(res.data.data)
   },
 }

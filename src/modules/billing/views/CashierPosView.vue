@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
@@ -14,9 +14,12 @@ import { posApi } from '../api/pos.api'
 import PosItemSearch from '../components/PosItemSearch.vue'
 import PosCart from '../components/PosCart.vue'
 import CashPaymentDialog from '../components/CashPaymentDialog.vue'
-import { MAX_CART_LINES, parseQty, usePosCart } from '../composables/usePosCart'
+import SaleReceipt from '../components/SaleReceipt.vue'
+import { MAX_CART_LINES, parseQty, usePosCart, type CartLine } from '../composables/usePosCart'
 import { usePosCheckout, type RejectedCheckout } from '../composables/usePosCheckout'
-import type { CreateSalePayload, PaymentMethod, PosItem, PosUnit, Shift } from '../types/billing'
+import { useReceiptWidth } from '../composables/useReceiptWidth'
+import { toCents } from '../utils/checkout'
+import type { CreateSalePayload, PaymentMethod, PosItem, PosUnit, Sale, Shift } from '../types/billing'
 
 // Layar POS (billing-mvp-spec §4.9, BR-PS-01..11).
 const auth = useAuthStore()
@@ -35,6 +38,41 @@ const searchRef = ref<InstanceType<typeof PosItemSearch> | null>(null)
 const paymentOpen = ref(false)
 const dialogError = ref('')
 const supervisorNotice = ref('')
+const staleNotice = ref('')
+
+const STALE_CART_CODES = ['BIL_012', 'BIL_013', 'BIL_014']
+const STALE_CART_MESSAGE =
+  'Transaksi sebelumnya ditolak (harga, stok, atau ketersediaan item berubah). Keranjang sebelumnya tidak tersedia, silakan input ulang.'
+
+// Struk pertama (BR-RC-08: tanpa SALINAN). Data = response checkout (§4.8); bila tidak memuat
+// objek `receipt`, diambil dari GET /billing/sales/:id saat Cetak Struk ditekan.
+const { width: receiptWidth } = useReceiptWidth()
+const fetchedSale = ref<Sale | null>(null)
+const printLoading = ref(false)
+const receiptSale = computed(() => {
+  const sale = checkout.sale.value
+  if (!sale) return null
+  return sale.receipt ? sale : fetchedSale.value
+})
+
+async function onPrint() {
+  const sale = checkout.sale.value
+  if (!sale) return
+  if (!sale.receipt && !fetchedSale.value) {
+    printLoading.value = true
+    try {
+      fetchedSale.value = await billingApi.getSale(sale.id)
+    } catch (error) {
+      toast.error(apiErrorMessage(error, 'Gagal memuat data struk.'))
+      return
+    } finally {
+      printLoading.value = false
+    }
+  }
+  // Tunggu struk ter-render (Teleport) sebelum dialog cetak browser dibuka.
+  await nextTick()
+  window.print()
+}
 
 const dialogVisible = computed(() => paymentOpen.value || checkout.phase.value !== 'idle')
 // Keranjang & pencarian terkunci saat mengirim / belum pasti (BR-PS-09).
@@ -108,6 +146,7 @@ async function onSubmit(tendered: number) {
   const branchId = auth.context?.branchId
   if (!userId || !branchId) return
 
+  staleNotice.value = ''
   dialogError.value = ''
   const snapshot = {
     lines: cart.lines.value.map((l) => ({
@@ -130,6 +169,15 @@ async function onRetry() {
 async function settle(outcome: Promise<RejectedCheckout | null>) {
   const rejected = await outcome
   if (!rejected) return
+
+  // BR-PS-10: transaksi dipulihkan setelah reload tanpa keranjang di memori. Harga/stok berubah
+  // (BIL_012/013/014) tidak bisa ditandai ke baris; kasir harus menginput ulang.
+  if (cart.lines.value.length === 0 && STALE_CART_CODES.includes(rejected.code ?? '')) {
+    paymentOpen.value = false
+    staleNotice.value = STALE_CART_MESSAGE
+    return
+  }
+
   const indexes = Object.keys(rejected.lineErrors).map(Number)
   for (const index of indexes) {
     const line = cart.lines.value[index]
@@ -153,35 +201,55 @@ async function settle(outcome: Promise<RejectedCheckout | null>) {
       toast.error(rejected.message)
       cart.clear()
       break
+    case 'forbidden':
+      // 403: interceptor global sudah menampilkan "Anda tidak memiliki akses" (BR-FE-07);
+      // tidak diulang di dialog agar tidak dobel. Keranjang tetap (BR-PS-08).
+      break
     default:
       if (indexes.length > 0) {
         paymentOpen.value = false
         toast.error(rejected.message)
       } else {
-        // BIL_006/007/009, 400, 403: pesan di dialog bayar; keranjang tetap.
+        // BIL_006/007/009, 400: pesan di dialog bayar; keranjang tetap.
         dialogError.value = rejected.message
       }
   }
 }
 
+/** Batas request paralel saat memuat ulang harga (hindari N+1 berurutan maupun banjir request). */
+const RELOAD_CONCURRENCY = 4
+
 /** Muat ulang harga dari POS lookup untuk baris yang harganya berubah (BIL_012). */
 async function reloadPrices(indexes: number[]) {
-  const targets = indexes.length > 0 ? indexes : cart.lines.value.map((_, i) => i)
-  for (const index of targets) {
-    const line = cart.lines.value[index]
-    if (!line) continue
+  const targets = (indexes.length > 0 ? indexes : cart.lines.value.map((_, i) => i))
+    .map((index) => cart.lines.value[index])
+    .filter((line): line is CartLine => !!line)
+
+  // Satu pencarian per kode item, dipakai bersama baris dengan item sama (satuan berbeda).
+  const lookups = new Map<string, Promise<PosItem[]>>()
+  const lookup = (code: string) => {
+    let pending = lookups.get(code)
+    if (!pending) {
+      pending = posApi.searchItems(code, 20)
+      lookups.set(code, pending)
+    }
+    return pending
+  }
+
+  async function reloadLine(line: CartLine) {
     try {
-      const items = await posApi.searchItems(line.itemCode, 20)
-      const unit = items
-        .find((item) => item.itemId === line.itemId)
-        ?.units.find((u) => u.unitId === line.unitId)
+      const items = await lookup(line.itemCode)
+      // Cocokkan item persis (id, lalu kode persis), bukan baris pertama hasil pencarian.
+      const item =
+        items.find((i) => i.itemId === line.itemId) ?? items.find((i) => i.itemCode === line.itemCode)
+      const unit = item?.units.find((u) => u.unitId === line.unitId)
       if (!unit || !unit.sellable || unit.unitPrice === null) {
         line.serverError = 'Item tidak lagi dapat dijual. Hapus dari keranjang.'
-        continue
+        return
       }
       line.available = unit.availableQuantity
       line.serverError = null
-      if (unit.unitPrice !== line.unitPrice) {
+      if (toCents(unit.unitPrice) !== toCents(line.unitPrice)) {
         line.priceChange = { oldPrice: line.unitPrice }
         line.unitPrice = unit.unitPrice
       }
@@ -189,6 +257,17 @@ async function reloadPrices(indexes: number[]) {
       line.serverError = 'Gagal memuat ulang harga. Hapus lalu tambahkan kembali item ini.'
     }
   }
+
+  // Worker pool kecil: tiap worker mengambil baris berikutnya sampai habis.
+  let next = 0
+  const worker = async () => {
+    while (next < targets.length) {
+      const line = targets[next]
+      next += 1
+      await reloadLine(line)
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(RELOAD_CONCURRENCY, targets.length) }, worker))
 }
 
 function onAbandon() {
@@ -199,6 +278,8 @@ function onAbandon() {
 }
 
 function onDone() {
+  staleNotice.value = ''
+  fetchedSale.value = null
   checkout.reset()
   cart.clear()
   paymentOpen.value = false
@@ -209,6 +290,12 @@ function onDone() {
 <template>
   <div class="pos">
     <h1 class="pos__title">Layar POS</h1>
+
+    <!-- Di luar cabang shift agar tetap terlihat walau shift belum terbuka. -->
+    <p v-if="staleNotice" class="alert alert--warn" role="alert">
+      {{ staleNotice }}
+      <BaseButton label="Tutup" variant="ghost" size="small" @click="staleNotice = ''" />
+    </p>
 
     <p v-if="shiftLoading" class="pos__hint">Memuat shift...</p>
 
@@ -280,11 +367,21 @@ function onDone() {
       :pending="checkout.pending.value"
       :sale="checkout.sale.value"
       :error-message="dialogError"
+      :print-loading="printLoading"
       @close="paymentOpen = false"
       @submit="onSubmit"
       @retry="onRetry"
       @abandon="onAbandon"
       @done="onDone"
+      @print="onPrint"
+    />
+
+    <!-- Struk pertama, tanpa penanda SALINAN (BR-RC-08); hanya tercetak lewat window.print(). -->
+    <SaleReceipt
+      v-if="receiptSale"
+      :sale="receiptSale"
+      :branch-name="auth.context?.branchName ?? ''"
+      :width="receiptWidth"
     />
   </div>
 </template>

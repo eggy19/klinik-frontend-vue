@@ -5,8 +5,12 @@ withDefaults(
   defineProps<{
     visible: boolean
     header?: string
+    /** Tampilkan tombol X. Default true; false untuk dialog terkunci (mis. status belum pasti). */
+    closable?: boolean
+    /** Tutup dengan klik area di luar dialog. Default true; false untuk dialog terkunci. */
+    dismissable?: boolean
   }>(),
-  {},
+  { closable: true, dismissable: true },
 )
 
 const emit = defineEmits<{
@@ -24,7 +28,8 @@ const emit = defineEmits<{
     :header="header"
     modal
     :draggable="false"
-    :dismissable-mask="true"
+    :closable="closable"
+    :dismissable-mask="dismissable"
     :style="{ width: '600px' }"
     :breakpoints="{ '767px': '95vw' }"
     @update:visible="emit('update:visible', $event)"

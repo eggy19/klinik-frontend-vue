@@ -59,7 +59,7 @@ function onSubmit() {
         </div>
       </dl>
 
-      <BaseCurrencyInput v-model="counted" whole-rupiah label="Kas fisik dihitung" required />
+      <BaseCurrencyInput v-model="counted" whole-rupiah select-on-focus label="Kas fisik dihitung" required />
 
       <p v-if="differenceCents !== null" class="close-shift__diff" :class="{ 'close-shift__diff--bad': noteRequired }">
         Selisih: {{ formatCurrency(fromCents(differenceCents)) }}

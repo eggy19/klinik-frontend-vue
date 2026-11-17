@@ -1,0 +1,112 @@
+/*
+ * Struk kasir (billing-mvp-spec §4.8, BR-RC-10). CSS global karena struk di-teleport ke <body>
+ * dan aturan cetak harus menyembunyikan seluruh aplikasi selain struk.
+ *
+ * Warna hitam/putih dipaksa di sini (bukan CSS variable tema): kertas termal monokrom dan
+ * struk harus terbaca sama di tema terang maupun gelap.
+ */
+
+/* Di layar struk tidak tampil; hanya muncul saat dicetak. */
+.receipt-print {
+  display: none;
+}
+
+@media print {
+  /*
+   * Hanya berlaku saat struk ter-mount (class `printing-receipt` di <html>, dipasang SaleReceipt),
+   * agar Ctrl+P di halaman lain tidak menghasilkan kertas kosong. @page tidak bisa diberi syarat,
+   * jadi margin kertas dibiarkan default.
+   */
+  html.printing-receipt body > *:not(.receipt-print) {
+    display: none !important;
+  }
+
+  html.printing-receipt,
+  html.printing-receipt body {
+    background: white !important;
+    min-height: 0 !important;
+  }
+
+  .receipt-print {
+    display: block;
+    box-sizing: border-box;
+    padding: 2mm;
+    color: black;
+    background: white;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
+  .receipt-print--w58 {
+    width: 58mm;
+  }
+
+  .receipt-print--w80 {
+    width: 80mm;
+    font-size: 12px;
+  }
+
+  .receipt-print__head {
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+
+  .receipt-print__line {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .receipt-print__label {
+    display: inline-block;
+    min-width: 6ch;
+  }
+
+  .receipt-print__row > .receipt-print__indent {
+    padding-left: 2ch;
+  }
+
+  .receipt-print__rule {
+    margin: 1.5mm 0;
+    border: 0;
+    border-top: 1px dashed black;
+  }
+
+  .receipt-print__row {
+    display: flex;
+    justify-content: space-between;
+    gap: 2mm;
+  }
+
+  .receipt-print__row > span:first-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .receipt-print__row > span:last-child {
+    flex: none;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .receipt-print__item-name {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .receipt-print__strong {
+    font-weight: bold;
+  }
+
+  .receipt-print__foot {
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+
+  .receipt-print__copy {
+    margin: 1.5mm 0 0;
+    text-align: center;
+    font-weight: bold;
+    overflow-wrap: anywhere;
+  }
+}

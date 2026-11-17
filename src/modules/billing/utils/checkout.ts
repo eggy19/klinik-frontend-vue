@@ -51,12 +51,36 @@ export function loadPendingCheckout(userId: string, branchId: string): PendingCh
   try {
     const raw = sessionStorage.getItem(pendingSlot(userId, branchId))
     if (!raw) return null
-    const parsed = JSON.parse(raw) as PendingCheckout
-    if (parsed.userId !== userId || parsed.branchId !== branchId) return null
+    const parsed: unknown = JSON.parse(raw)
+    if (!isPendingCheckout(parsed) || parsed.userId !== userId || parsed.branchId !== branchId) {
+      // Bentuk rusak / bukan milik slot ini: buang agar tidak memblokir POS (BR-PS-10).
+      clearPendingCheckout(userId, branchId)
+      return null
+    }
     return parsed
   } catch {
+    clearPendingCheckout(userId, branchId)
     return null
   }
+}
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/** Validasi bentuk data dari sessionStorage (bisa rusak / diubah manual). */
+function isPendingCheckout(value: unknown): value is PendingCheckout {
+  if (!isRecord(value)) return false
+  if (typeof value.key !== 'string' || !UUID_PATTERN.test(value.key)) return false
+  if (typeof value.userId !== 'string' || typeof value.branchId !== 'string') return false
+  const { payload, snapshot } = value
+  if (!isRecord(payload) || !Array.isArray(payload.items) || !Array.isArray(payload.payments)) return false
+  if (!payload.items.every(isRecord) || !payload.payments.every(isRecord)) return false
+  // Snapshot dipakai dialog untuk menampilkan ringkasan; rusak = tidak bisa ditampilkan.
+  if (!isRecord(snapshot) || !Array.isArray(snapshot.lines) || !snapshot.lines.every(isRecord)) return false
+  return typeof snapshot.total === 'number' && typeof snapshot.tendered === 'number'
 }
 
 export function savePendingCheckout(pending: PendingCheckout): void {
@@ -77,7 +101,8 @@ export function clearPendingCheckout(userId: string, branchId: string): void {
 
 export type UncertainReason = 'timeout' | 'network' | 'unavailable' | 'unauthorized' | 'unknown'
 
-export type RejectedAction = 'none' | 'open-shift' | 'reload-prices' | 'supervisor'
+/** `forbidden` = 403: pesan "Anda tidak memiliki akses" sudah ditampilkan interceptor global (BR-FE-07). */
+export type RejectedAction = 'none' | 'open-shift' | 'reload-prices' | 'supervisor' | 'forbidden'
 
 export type CheckoutFailure =
   /** Belum ada jawaban pasti: pakai ulang key yang sama (BR-PS-08/09). */
@@ -157,7 +182,7 @@ export function classifyCheckoutError(error: unknown): CheckoutFailure {
       break
   }
 
-  if (status === 403) return rejected('Anda tidak memiliki akses.')
+  if (status === 403) return rejected('Anda tidak memiliki akses.', 'forbidden')
   // 5xx tanpa kode dikenal: jawaban tidak pasti, aman diulang karena idempotent di kedua lapis.
   if (status >= 500) return { kind: 'uncertain', reason: 'unknown' }
   return rejected(apiErrorMessage(error, 'Transaksi gagal diproses.'))

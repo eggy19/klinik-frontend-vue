@@ -13,11 +13,14 @@ const props = withDefaults(
     error?: string
     /** Rupiah bulat tanpa sen: ketik "20000" = 20000 (default: mask sen, "20000" = 200,00). */
     wholeRupiah?: boolean
+    /** Pilih seluruh teks saat fokus agar ketikan mengganti nilai awal (mis. "0"), bukan menyisip. */
+    selectOnFocus?: boolean
   }>(),
   {
     required: false,
     disabled: false,
     wholeRupiah: false,
+    selectOnFocus: false,
   },
 )
 
@@ -47,6 +50,13 @@ function onInput(event: Event) {
   display.value = formatNominalInput(parsed, fractionDigits.value)
   emit('update:modelValue', parsed)
 }
+
+function onFocus(event: FocusEvent) {
+  if (!props.selectOnFocus) return
+  const input = event.target as HTMLInputElement
+  // Ditunda: pada klik mouse, mouseup setelah focus akan membatalkan seleksi yang dibuat sinkron.
+  setTimeout(() => input.select(), 0)
+}
 </script>
 
 <template>
@@ -66,6 +76,7 @@ function onInput(event: Event) {
       :aria-invalid="hasError"
       class="base-field__control base-field__control--num"
       @input="onInput"
+      @focus="onFocus"
     />
 
     <small v-if="hasError" class="base-field__error">{{ error }}</small>

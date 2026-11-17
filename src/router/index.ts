@@ -51,30 +51,28 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/modules/billing/views/CashierPosView.vue'),
         meta: { title: 'Layar POS', permission: 'billing.sale.create' },
       },
-      // Riwayat Penjualan & Daftar Shift: halaman dikerjakan di BL-20. Route didaftarkan
-      // lebih dulu agar guard permission berlaku (BR-MN-07); belum ada menu sidebar-nya.
       {
         path: 'sales',
         name: 'cashier-sales',
-        component: () => import('@/modules/billing/views/CashierComingSoonView.vue'),
+        component: () => import('@/modules/billing/views/CashierSalesView.vue'),
         meta: { title: 'Riwayat Penjualan', permission: ['billing.sale.read', 'billing.sale.read_all'] },
       },
       {
         path: 'sales/:id',
         name: 'cashier-sale-detail',
-        component: () => import('@/modules/billing/views/CashierComingSoonView.vue'),
+        component: () => import('@/modules/billing/views/CashierSaleDetailView.vue'),
         meta: { title: 'Detail Penjualan', permission: ['billing.sale.read', 'billing.sale.read_all'] },
       },
       {
         path: 'shifts',
         name: 'cashier-shifts',
-        component: () => import('@/modules/billing/views/CashierComingSoonView.vue'),
+        component: () => import('@/modules/billing/views/CashierShiftListView.vue'),
         meta: { title: 'Daftar Shift', permission: 'billing.shift.read_all' },
       },
       {
         path: 'shifts/:id',
         name: 'cashier-shift-detail',
-        component: () => import('@/modules/billing/views/CashierComingSoonView.vue'),
+        component: () => import('@/modules/billing/views/CashierShiftDetailView.vue'),
         meta: { title: 'Detail Shift', permission: 'billing.shift.read_all' },
       },
     ],
