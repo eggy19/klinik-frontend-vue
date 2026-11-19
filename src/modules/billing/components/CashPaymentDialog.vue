@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import BaseDialog from '@/components/base/BaseDialog.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCurrencyInput from '@/components/base/BaseCurrencyInput.vue'
@@ -41,8 +41,15 @@ const emit = defineEmits<{
 const closable = computed(() => props.phase === 'idle' || props.phase === 'success')
 const dismissable = computed(() => props.phase === 'idle')
 
+// BR-PS-13: konfirmasi kembalian besar (konstanta FE, tidak dikonfigurasi).
+const LARGE_CHANGE_THRESHOLD = 1_000_000
+
 const tendered = ref<number | null>(null)
 const confirmingAbandon = ref(false)
+const confirmingLarge = ref(false)
+const tenderedInput = ref<{ focus: () => void } | null>(null)
+// Cegah submit ganda (Enter/klik ganda) sebelum phase berubah.
+let submitLocked = false
 
 watch(
   () => props.visible,
@@ -50,12 +57,52 @@ watch(
     if (visible) {
       tendered.value = null
       confirmingAbandon.value = false
+      confirmingLarge.value = false
+      submitLocked = false
     }
+  },
+)
+
+watch(
+  () => props.phase,
+  () => {
+    confirmingLarge.value = false
+    submitLocked = false
   },
 )
 
 const changeCents = computed(() => toCents(tendered.value ?? 0) - toCents(props.total))
 const enough = computed(() => tendered.value !== null && changeCents.value >= 0)
+// Lebih besar (bukan sama dengan) dari total + batas, dalam sen.
+const largeChange = computed(() => changeCents.value > toCents(LARGE_CHANGE_THRESHOLD))
+
+function lockedSubmit(amount: number) {
+  submitLocked = true
+  emit('submit', amount)
+  // Lepas kunci setelah render berikutnya (tombol sudah hilang bila phase berubah),
+  // agar Proses tidak mati bila induk menolak diam-diam.
+  setTimeout(() => (submitLocked = false), 0)
+}
+
+function onProcess() {
+  if (tendered.value === null || !enough.value || submitLocked || confirmingLarge.value) return
+  if (largeChange.value) {
+    confirmingLarge.value = true
+    return
+  }
+  lockedSubmit(tendered.value)
+}
+
+function onConfirmLarge() {
+  if (tendered.value === null || !confirmingLarge.value || submitLocked) return
+  lockedSubmit(tendered.value)
+}
+
+async function onEditTendered() {
+  confirmingLarge.value = false
+  await nextTick()
+  tenderedInput.value?.focus()
+}
 
 const UNCERTAIN_TEXT: Record<UncertainDisplayReason, string> = {
   timeout: 'Server tidak menjawab dalam 45 detik.',
@@ -142,7 +189,15 @@ const header = computed(() => {
       <dl class="pay__rows">
         <div class="pay__row--big"><dt>Total</dt><dd>{{ formatCurrency(total) }}</dd></div>
       </dl>
-      <BaseCurrencyInput v-model="tendered" whole-rupiah select-on-focus label="Uang diterima" required />
+      <BaseCurrencyInput
+        ref="tenderedInput"
+        v-model="tendered"
+        whole-rupiah
+        select-on-focus
+        label="Uang diterima"
+        required
+        :disabled="confirmingLarge"
+      />
       <dl class="pay__rows">
         <div>
           <dt>Kembalian</dt>
@@ -151,6 +206,10 @@ const header = computed(() => {
       </dl>
       <p v-if="tendered !== null && !enough" class="pay__error">Uang diterima kurang dari total.</p>
       <p v-if="errorMessage" class="pay__error">{{ errorMessage }}</p>
+      <p v-if="confirmingLarge && tendered !== null" class="pay__confirm" role="alert">
+        Uang diterima {{ formatCurrency(tendered) }}, kembalian
+        {{ formatCurrency(fromCents(changeCents)) }}. Sudah benar?
+      </p>
     </div>
 
     <template #footer>
@@ -183,13 +242,14 @@ const header = computed(() => {
         </template>
       </template>
       <template v-else-if="phase === 'idle'">
-        <BaseButton label="Batal" variant="secondary" @click="emit('close')" />
-        <BaseButton
-          label="Proses"
-          icon="pi pi-check"
-          :disabled="!enough"
-          @click="tendered !== null && emit('submit', tendered)"
-        />
+        <template v-if="confirmingLarge">
+          <BaseButton label="Ubah" variant="secondary" @click="onEditTendered" />
+          <BaseButton label="Ya, proses" icon="pi pi-check" @click="onConfirmLarge" />
+        </template>
+        <template v-else>
+          <BaseButton label="Batal" variant="secondary" @click="emit('close')" />
+          <BaseButton label="Proses" icon="pi pi-check" :disabled="!enough" @click="onProcess" />
+        </template>
       </template>
     </template>
   </BaseDialog>

@@ -88,6 +88,10 @@ function onMouseUp(event: MouseEvent) {
 function resetSelectPending() {
   selectPending = false
 }
+
+// Aditif: fokus programatik (dengan selectOnFocus, isi ikut terseleksi). Perilaku default tidak berubah.
+const inputRef = ref<{ $el: HTMLInputElement } | null>(null)
+defineExpose({ focus: () => inputRef.value?.$el.focus() })
 </script>
 
 <template>
@@ -99,6 +103,7 @@ function resetSelectPending() {
 
     <InputText
       :id="fieldId"
+      ref="inputRef"
       :model-value="display"
       inputmode="decimal"
       :placeholder="placeholder"
