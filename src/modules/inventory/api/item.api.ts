@@ -2,7 +2,6 @@ import axios from 'axios'
 import { apiClient } from '@/api/client'
 import type { ApiResponse, PaginationMeta } from '@/api/types'
 import type {
-  CurrentItemPrice,
   CurrentUnitPrice,
   Item,
   ItemInput,
@@ -87,14 +86,6 @@ interface ApiItemSupplier {
   isPrimary?: boolean
 }
 
-interface ApiItemPrice {
-  purchasePrice?: number | string | null
-  sellingPrice?: number | string | null
-  marginType?: MarginType | null
-  marginValue?: number | string | null
-  effectiveDate?: string | null
-}
-
 // Baris master_item_unit_price bersarang di dalam ApiItemUnit.currentPrice
 // (lihat ItemUnitService.list — join current_price per baris satuan).
 interface ApiItemUnitPrice {
@@ -115,16 +106,6 @@ interface ApiItemUnit {
   defaultPurchase?: boolean
   defaultSales?: boolean
   currentPrice?: ApiItemUnitPrice | null
-}
-
-function fromApiPrice(raw: ApiItemPrice): CurrentItemPrice {
-  return {
-    purchasePrice: toNumber(raw.purchasePrice),
-    sellingPrice: toNumber(raw.sellingPrice),
-    marginType: raw.marginType ?? 'PERCENTAGE',
-    marginValue: toNumber(raw.marginValue),
-    effectiveDate: raw.effectiveDate ?? '',
-  }
 }
 
 function fromApiUnitPrice(raw: ApiItemUnitPrice): CurrentUnitPrice {
@@ -237,19 +218,6 @@ export const itemApi = {
       supplierId: r.supplierId,
       isPrimary: r.isPrimary ?? false,
     }))
-  },
-
-  /** Harga aktif terkini item (endpoint legacy — sudah di-rewire backend ke baris satuan dasar), atau null kalau belum pernah diisi. Dipakai prefill harga di form Purchase Order/Goods Receipt. */
-  async getCurrentPrice(id: string): Promise<CurrentItemPrice | null> {
-    try {
-      const res = await apiClient.get<ApiResponse<ApiItemPrice>>(
-        `/inventory/master/items/${id}/prices/current`,
-      )
-      return fromApiPrice(res.data.data)
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err) && err.response?.status === 404) return null
-      throw err
-    }
   },
 
   async create(input: ItemInput): Promise<Item> {

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
-import BaseInput from '@/components/base/BaseInput.vue'
 import BaseCurrencyInput from '@/components/base/BaseCurrencyInput.vue'
+import BaseDecimalInput from '@/components/base/BaseDecimalInput.vue'
 import BaseSelect from '@/components/base/BaseSelect.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
-import { formatCurrency } from '@/utils/format'
+import { formatCurrency, formatDecimal } from '@/utils/format'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useMarginSettingStore } from '../../stores/margin-setting.store'
 import { MARGIN_TYPE_OPTIONS, type ItemInput, type ItemUnitRow, type MarginType } from '../../types/item'
@@ -48,10 +48,6 @@ function onItemMarginToggle(checked: boolean) {
     props.form.marginType = null
     props.form.marginValue = null
   }
-}
-
-function onItemMarginValueInput(value: string) {
-  props.form.marginValue = value === '' ? null : Number(value)
 }
 
 // --- Baris satuan ---
@@ -126,10 +122,6 @@ function onUnitMarginToggle(row: ItemUnitRow, checked: boolean) {
   }
 }
 
-function onUnitMarginValueInput(row: ItemUnitRow, value: string) {
-  row.marginValue = value === '' ? null : Number(value)
-}
-
 /** Margin efektif satu baris: margin baris > margin item > default OTC/Resep branch — sama persis urutan resolveMarginForUnit di backend, ini cuma preview client. */
 function resolvedMargin(row: ItemUnitRow): { type: MarginType; value: number } {
   if (row.marginType !== null && row.marginValue !== null) {
@@ -150,7 +142,7 @@ function previewSellingPrice(row: ItemUnitRow): number {
 }
 
 function marginLabel(type: MarginType, value: number): string {
-  return `${value}${type === 'PERCENTAGE' ? '%' : ' Rp'}`
+  return type === 'PERCENTAGE' ? `${formatDecimal(value)}%` : formatCurrency(value)
 }
 </script>
 
@@ -185,13 +177,13 @@ function marginLabel(type: MarginType, value: number): string {
           :error="errors?.marginValue"
           @update:model-value="form.marginValue = $event"
         />
-        <BaseInput
+        <BaseDecimalInput
           v-else
-          :model-value="form.marginValue ?? ''"
+          :model-value="form.marginValue"
           label="Nilai Margin (%)"
-          type="number"
+          placeholder="mis. 12,5"
           :error="errors?.marginValue"
-          @update:model-value="onItemMarginValueInput"
+          @update:model-value="form.marginValue = $event"
         />
       </div>
 
@@ -199,11 +191,11 @@ function marginLabel(type: MarginType, value: number): string {
         <template v-if="hasItemOverride">
           Jadi fallback semua satuan yang tidak punya margin sendiri:
           <strong>{{ marginLabel(form.marginType as MarginType, form.marginValue as number) }}</strong>
-          (bukan default {{ form.prescriptionRequired ? 'Resep' : 'OTC' }} {{ defaultMarginPercentage }}%).
+          (bukan default {{ form.prescriptionRequired ? 'Resep' : 'OTC' }} {{ formatDecimal(defaultMarginPercentage) }}%).
         </template>
         <template v-else>
           Satuan tanpa margin sendiri memakai default
-          {{ form.prescriptionRequired ? 'Resep' : 'OTC' }}: <strong>{{ defaultMarginPercentage }}%</strong>.
+          {{ form.prescriptionRequired ? 'Resep' : 'OTC' }}: <strong>{{ formatDecimal(defaultMarginPercentage) }}%</strong>.
           Ubah default di menu Pengaturan Margin.
         </template>
       </p>
@@ -310,7 +302,8 @@ function marginLabel(type: MarginType, value: number): string {
             <BaseCurrencyInput
               :model-value="row.purchasePrice"
               label="Harga Beli (Rp)"
-              placeholder="mis. 1.000,00"
+              placeholder="mis. 1.000"
+              whole-rupiah
               :disabled="!row.purchaseEnabled || !canManagePrice"
               :error="errors?.[`units.${i}.purchasePrice`]"
               @update:model-value="row.purchasePrice = $event"
@@ -352,13 +345,13 @@ function marginLabel(type: MarginType, value: number): string {
               :disabled="!canManagePrice"
               @update:model-value="row.marginValue = $event"
             />
-            <BaseInput
+            <BaseDecimalInput
               v-else
-              :model-value="row.marginValue ?? ''"
+              :model-value="row.marginValue"
               label="Nilai Margin (%)"
-              type="number"
+              placeholder="mis. 12,5"
               :disabled="!canManagePrice"
-              @update:model-value="(v: string) => onUnitMarginValueInput(row, v)"
+              @update:model-value="row.marginValue = $event"
             />
           </div>
 

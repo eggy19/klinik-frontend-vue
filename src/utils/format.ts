@@ -23,6 +23,12 @@ export function parseNominalInput(raw: string, fractionDigits = 2): number | nul
   return parseInt(digits, 10) / 10 ** fractionDigits
 }
 
+/** Format angka desimal id-ID (koma desimal, tanpa nol berlebih), mis. 12.5 -> "12,5", 1000 -> "1.000". */
+export function formatDecimal(value: number | null | undefined, maxFractionDigits = 2): string {
+  if (value == null) return ''
+  return value.toLocaleString('id-ID', { maximumFractionDigits: maxFractionDigits })
+}
+
 /** Format tanggal ISO / Date ke "17 Jun 2026". */
 export function formatDate(value: string | Date | null | undefined): string {
   if (!value) return '-'

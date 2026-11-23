@@ -5,7 +5,7 @@ import BaseInput from '@/components/base/BaseInput.vue'
 import BaseCurrencyInput from '@/components/base/BaseCurrencyInput.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import { itemApi } from '@/modules/inventory/api/item.api'
-import type { Item } from '@/modules/inventory/types/item'
+import type { Item, ItemUnitRow } from '@/modules/inventory/types/item'
 import type { Unit } from '@/modules/inventory/types/unit'
 import { formatCurrency } from '@/utils/format'
 import type { PurchaseOrderItemInput } from '../../types/purchase-order'
@@ -26,8 +26,8 @@ const emit = defineEmits<{
 const form = reactive<PurchaseOrderItemInput>({ ...props.initial })
 
 // Link mentah master_item_unit item terpilih — dipakai untuk resolve opsi
-// dropdown Satuan (nama unit) sekaligus tahu mana yang isBaseUnit (default).
-const unitLinks = ref<{ unitId: string; isBaseUnit: boolean }[]>([])
+// dropdown Satuan (nama unit), satuan Default Beli, dan harga beli per satuan.
+const unitLinks = ref<ItemUnitRow[]>([])
 const loadingUnits = ref(false)
 
 const unitOptions = computed<Unit[]>(() =>
@@ -55,8 +55,7 @@ async function loadUnitOptions(itemId: string) {
   }
   loadingUnits.value = true
   try {
-    const links = await itemApi.getUnits(itemId)
-    unitLinks.value = links.map((l) => ({ unitId: l.unitId, isBaseUnit: l.isBaseUnit }))
+    unitLinks.value = await itemApi.getUnits(itemId)
   } catch {
     unitLinks.value = []
   } finally {
@@ -64,22 +63,36 @@ async function loadUnitOptions(itemId: string) {
   }
 }
 
+/**
+ * Harga beli master untuk satuan terpilih: harga satuan itu sendiri; bila satuan
+ * belum punya harga, harga satuan dasar x faktor konversi; selain itu 0.
+ */
+function purchasePriceForUnit(unitId: string): number {
+  const link = unitLinks.value.find((l) => l.unitId === unitId)
+  if (!link) return 0
+  if (link.currentPrice) return link.currentPrice.purchasePrice
+  const base = unitLinks.value.find((l) => l.isBaseUnit)
+  return base?.currentPrice ? base.currentPrice.purchasePrice * link.conversionFactor : 0
+}
+
 async function onItemChange(itemId: string) {
   form.itemId = itemId
   form.unitId = ''
   await loadUnitOptions(itemId)
 
-  const baseLink = unitLinks.value.find((l) => l.isBaseUnit)
+  // Satuan default = flag Default Beli di master item, lalu satuan dasar, lalu opsi pertama.
   const options = unitOptions.value
-  const defaultUnit = (baseLink && options.find((u) => u.id === baseLink.unitId)) ?? options[0]
+  const preferred =
+    unitLinks.value.find((l) => l.defaultPurchase) ?? unitLinks.value.find((l) => l.isBaseUnit)
+  const defaultUnit = (preferred && options.find((u) => u.id === preferred.unitId)) ?? options[0]
   if (defaultUnit) form.unitId = defaultUnit.id
+  form.unitPrice = purchasePriceForUnit(form.unitId)
+}
 
-  try {
-    const price = await itemApi.getCurrentPrice(itemId)
-    form.unitPrice = price?.purchasePrice ?? 0
-  } catch {
-    // Prefill harga gagal jangan blok pengisian form — user bisa isi manual.
-  }
+// Ganti satuan manual = harga ikut harga beli master satuan tersebut.
+function onUnitChange(unitId: string) {
+  form.unitId = unitId
+  form.unitPrice = purchasePriceForUnit(unitId)
 }
 
 function validate(): boolean {
@@ -133,7 +146,7 @@ onMounted(() => {
       </div>
 
       <BaseSelect
-        v-model="form.unitId"
+        :model-value="form.unitId"
         :options="unitOptions"
         option-label="name"
         option-value="id"
@@ -142,6 +155,7 @@ onMounted(() => {
         required
         :disabled="!form.itemId || loadingUnits"
         :error="errors.unitId"
+        @update:model-value="onUnitChange($event as string)"
       />
 
       <BaseInput
