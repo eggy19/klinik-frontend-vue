@@ -76,9 +76,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="opname-list">
+  <div class="opname-list kp-page">
     <div class="opname-list__head">
-      <h1 class="opname-list__title">Stock Opname</h1>
+      <h1 class="opname-list__title kp-title">Stock Opname</h1>
       <BaseButton v-if="auth.can('inventory.stock_opname.create')" label="Buat Opname" icon="pi pi-plus" @click="goCreate" />
     </div>
 
@@ -114,6 +114,10 @@ onMounted(() => {
           />
         </template>
 
+        <template #cell-opnameNumber="{ data }">
+          <span class="kp-mono opname-list__no">{{ data.opnameNumber }}</span>
+        </template>
+
         <template #cell-status="{ data }">
           <BaseTag :value="statusLabel(data.status)" :variant="statusVariant(data.status)" />
         </template>
@@ -147,9 +151,8 @@ onMounted(() => {
   justify-content: space-between;
 }
 
-.opname-list__title {
-  font-size: var(--font-2xl);
-  color: var(--text);
+.opname-list__no {
+  font-weight: 600;
 }
 
 .opname-list__filter {

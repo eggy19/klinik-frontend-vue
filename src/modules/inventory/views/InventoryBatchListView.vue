@@ -104,12 +104,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="batch-list">
+  <div class="batch-list kp-page">
     <div class="batch-list__head">
-      <h1 class="batch-list__title">Inventory Batch</h1>
+      <h1 class="batch-list__title kp-title">Inventory Batch</h1>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div class="kp-stats kp-stats--compact">
       <BaseSummaryCard
         title="Total Batch"
         :value="store.stats.totalBatch"
@@ -233,6 +233,22 @@ onMounted(() => {
           />
         </template>
 
+        <template #cell-itemCode="{ data }">
+          <span class="kp-mono">{{ data.itemCode }}</span>
+        </template>
+
+        <template #cell-batchNumber="{ data }">
+          <span class="kp-mono batch-list__batch">{{ data.batchNumber }}</span>
+        </template>
+
+        <template #cell-goodsReceiptNumber="{ data }">
+          <span class="kp-mono">{{ data.goodsReceiptNumber }}</span>
+        </template>
+
+        <template #cell-quantity="{ data }">
+          <span class="kp-mono">{{ data.quantity }}</span>
+        </template>
+
         <template #cell-receivedDate="{ data }">
           {{ formatDate(data.receivedDate) }}
         </template>
@@ -260,9 +276,8 @@ onMounted(() => {
   gap: var(--space-6);
 }
 
-.batch-list__title {
-  font-size: var(--font-2xl);
-  color: var(--text);
+.batch-list__batch {
+  font-weight: 600;
 }
 
 .batch-list__filter {

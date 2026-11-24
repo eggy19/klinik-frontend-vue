@@ -1,0 +1,242 @@
+// Pola halaman (docs/02-design-system.md, bagian "Pola halaman").
+// OPT-IN: hanya berlaku di dalam wrapper `.kp-page`, supaya halaman yang belum diselaraskan
+// dengan mockup (Master Data, Item Form, Dashboard, Billing, Admin) tidak berubah.
+// Hanya memakai token (tidak ada hex).
+
+.kp-page {
+  // --- Header halaman ---
+  .kp-title {
+    margin: 0;
+    font-size: var(--font-xl);
+    font-weight: var(--font-weight-strong);
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+
+  .kp-subtitle {
+    margin: 0;
+    font-size: var(--font-size-base);
+    color: var(--text-muted);
+  }
+
+  // --- Angka & kode: monospace ---
+  .kp-mono,
+  .kp-num {
+    font-family: var(--font-mono);
+  }
+
+  .kp-num {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  // Label mikro (judul panel samping, kolom meta).
+  .kp-label {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  // --- Kartu ---
+  .base-card {
+    border-radius: var(--radius-lg);
+    box-shadow: none;
+  }
+
+  .base-card__header {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .base-card__title {
+    font-size: 15px;
+    font-weight: var(--font-weight-strong);
+  }
+
+  // --- Kartu ringkasan (BaseSummaryCard di dalam .kp-stats) ---
+  .kp-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--space-4);
+
+    // Varian padat untuk 5-6 kartu dalam satu baris.
+    &.kp-stats--compact {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+
+    .summary .summary__icon {
+      width: 40px;
+      height: 40px;
+      font-size: 1.1rem;
+      border-radius: var(--radius-sm);
+      background-color: var(--surface); // inline `${var}1a` dari BaseSummaryCard tidak valid
+    }
+
+    .summary .summary__title {
+      font-size: var(--font-size-base);
+      font-weight: 500;
+    }
+
+    .summary .summary__value {
+      font-family: var(--font-mono);
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+  }
+
+  // Kartu ringkasan gelap (mis. "Belanja Bulan Ini").
+  .kp-stat--dark {
+    .base-card {
+      background-color: var(--panel-dark-bg);
+      border-color: var(--panel-dark-bg);
+    }
+
+    .summary .summary__title {
+      color: var(--panel-dark-muted);
+    }
+
+    .summary .summary__value {
+      color: var(--panel-dark-text);
+    }
+
+    .summary .summary__icon {
+      color: var(--panel-dark-accent) !important;
+      background-color: var(--panel-dark-border);
+    }
+  }
+
+  // --- Tabel (PrimeVue DataTable) ---
+  .p-datatable-thead > tr > th {
+    background-color: var(--surface-subtle);
+    color: var(--text-muted);
+    font-size: var(--font-size-sm) !important;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .p-datatable-tbody > tr > td {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .p-datatable-tbody > tr:last-child > td {
+    border-bottom: 0;
+  }
+
+  .p-datatable-tbody > tr:hover > td {
+    background-color: var(--surface-hover);
+  }
+
+  // Toolbar tabel: kotak cari & filter selaras radius tombol.
+  .base-table__toolbar .p-inputtext,
+  .base-table__toolbar .p-select,
+  .base-table__toolbar .p-multiselect {
+    border-radius: var(--radius-sm);
+  }
+
+  // --- Footer total (panel total PO/GR) ---
+  .kp-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    background-color: var(--surface-subtle);
+    border-radius: var(--radius-sm);
+
+    .kp-total__label {
+      font-size: var(--font-size-base);
+      color: var(--text-muted);
+    }
+
+    .kp-total__value {
+      font-family: var(--font-mono);
+      font-size: var(--font-lg);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+  }
+
+  // --- Bilah progres tipis (penerimaan, qty) ---
+  .kp-progress {
+    height: 6px;
+    border-radius: 3px;
+    background-color: var(--surface-hover);
+    overflow: hidden;
+
+    > span {
+      display: block;
+      height: 100%;
+      background-color: var(--color-success);
+    }
+  }
+
+  // --- Panel gelap (panel harga GR) ---
+  .kp-panel--dark {
+    background-color: var(--panel-dark-bg);
+    color: var(--panel-dark-text);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+
+    .kp-label,
+    .kp-dark-muted {
+      color: var(--panel-dark-muted);
+    }
+
+    .kp-dark-row {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--space-3);
+    }
+
+    .kp-dark-divider {
+      border-top: 1px solid var(--panel-dark-border);
+      border-bottom: 1px solid var(--panel-dark-border);
+      padding: var(--space-3) 0;
+    }
+
+    .kp-dark-accent {
+      color: var(--panel-dark-accent);
+    }
+
+    .kp-dark-danger {
+      color: var(--panel-dark-danger);
+    }
+  }
+
+  // --- Banner status ---
+  .kp-banner {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    font-weight: 600;
+  }
+
+  .kp-banner--success {
+    background-color: var(--color-primary-soft);
+    color: var(--color-primary-soft-text);
+  }
+
+  .kp-banner--warning {
+    background-color: var(--color-warning-soft);
+    color: var(--color-warning-text);
+  }
+
+  .kp-banner--danger {
+    background-color: var(--color-danger-soft);
+    color: var(--color-danger-text);
+  }
+
+  .kp-banner--info {
+    background-color: var(--color-info-soft);
+    color: var(--color-info-text);
+  }
+}

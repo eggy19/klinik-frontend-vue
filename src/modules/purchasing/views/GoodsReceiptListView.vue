@@ -82,9 +82,9 @@ onMounted(() => fetchReceivable())
 </script>
 
 <template>
-  <div class="gr-list">
+  <div class="gr-list kp-page">
     <div class="gr-list__head">
-      <h1 class="gr-list__title">Goods Receipt</h1>
+      <h1 class="gr-list__title kp-title">Goods Receipt</h1>
     </div>
 
     <BaseCard>
@@ -110,6 +110,10 @@ onMounted(() => fetchReceivable())
         @page="onPage"
         @search="onSearch"
       >
+        <template #cell-poNumber="{ data }">
+          <span class="kp-mono gr-list__no">{{ data.poNumber }}</span>
+        </template>
+
         <template #cell-status="{ data }">
           <PurchaseOrderStatusTag :status="data.status" />
         </template>
@@ -132,6 +136,14 @@ onMounted(() => fetchReceivable())
         @page="onPage"
         @search="onSearch"
       >
+        <template #cell-receiptNumber="{ data }">
+          <span class="kp-mono gr-list__no">{{ data.receiptNumber }}</span>
+        </template>
+
+        <template #cell-poNumber="{ data }">
+          <span class="kp-mono">{{ data.poNumber }}</span>
+        </template>
+
         <template #cell-status="{ data }">
           <GoodsReceiptStatusTag :status="data.status" />
         </template>
@@ -141,7 +153,7 @@ onMounted(() => fetchReceivable())
         </template>
 
         <template #cell-grandTotal="{ data }">
-          {{ formatCurrency(data.grandTotal) }}
+          <span class="kp-mono">{{ formatCurrency(data.grandTotal) }}</span>
         </template>
 
         <template #row-actions="{ data }">
@@ -159,9 +171,8 @@ onMounted(() => fetchReceivable())
   gap: var(--space-6);
 }
 
-.gr-list__title {
-  font-size: var(--font-2xl);
-  color: var(--text);
+.gr-list__no {
+  font-weight: 600;
 }
 
 .gr-list__tabs {

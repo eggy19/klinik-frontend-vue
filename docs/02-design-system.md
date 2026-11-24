@@ -81,8 +81,42 @@ Skala PrimeVue `primary` (di `main.ts`); warna utama = 600.
 `--color-warning-text` (kontras >= 4,5:1 di latar kartu). `--font-weight-strong` (700) untuk brand
 dan nama tenant; token sidebar tambahan: `--sidebar-text-strong` (`#ffffff`), `--sidebar-scrollbar`.
 
-Catatan: komponen PrimeVue (Tag/Message/Toast) memakai palet severity bawaan Aura
-(green/orange/red/sky), bukan `--color-success` dst. Penyelarasannya masuk tahap berikutnya.
+Token status (latar lembut + teks), dipakai Tag/Message/Toast PrimeVue dan banner:
+
+| Variable | Light | Dark (`.app-dark`) |
+| -------- | ----- | ------------------ |
+| `--color-success-soft` / `-text` | `#d4ece3` / `#14533f` | `rgba(79,209,173,.16)` / `#8fe0c6` |
+| `--color-warning-soft` (teks: `--color-warning-text`) | `#fcf1dc` | `rgba(231,165,83,.16)` |
+| `--color-danger-soft` / `-text` | `#fbe6df` / `#a63d24` | `rgba(238,123,98,.16)` / `#f4a592` |
+| `--color-info-soft` / `-text` | `#e3ecfb` / `#2b56ad` | `rgba(143,168,255,.16)` / `#b3c4ff` |
+| `--color-neutral-soft` / `-text` | `#eceae4` / `#5d6b66` | `#1c302a` / `#8ea39c` |
+| `--surface-subtle` (header tabel, footer total) | `#faf9f6` | `#101f1b` |
+| `--panel-dark-*` (bg, text, muted, border, accent, danger) | panel gelap konstan di kedua tema | |
+
+Preset PrimeVue (`main.ts`) memetakan severity Tag (primary/secondary/success/info/warn/danger) dan
+Message/Toast (info/success/warn/error) ke token di atas lewat `var(--...)`, sehingga otomatis
+mengikuti tema. Tag: radius 6px, bobot 600.
+
+### Pola halaman (`src/styles/patterns/_page.scss`)
+
+Opt-in: aktif hanya di dalam wrapper `.kp-page` (halaman yang belum diselaraskan tidak berubah).
+Dipakai Purchasing, Dispensing, Stock/Batch/Movement/Opname.
+
+| Class | Fungsi |
+| ----- | ------ |
+| `.kp-title` | Judul halaman 20px/700 |
+| `.kp-mono`, `.kp-num` | Font mono untuk nomor dokumen, batch, qty, uang (`.kp-num` + rata kanan) |
+| `.kp-label` | Label mikro uppercase 12px |
+| `.kp-stats` (+ `--compact`) | Grid kartu ringkasan (`BaseSummaryCard`): nilai mono 26px |
+| `.kp-stat--dark` | Pembungkus kartu ringkasan gelap |
+| `.kp-total` (`__label`, `__value`) | Footer total (mono) |
+| `.kp-progress` | Bilah progres tipis |
+| `.kp-panel--dark` | Panel gelap (`.kp-dark-row/-divider/-accent/-danger`) |
+| `.kp-banner--success/warning/danger/info` | Banner status |
+
+Di dalam `.kp-page`: `BaseCard` radius 16 tanpa shadow; header tabel PrimeVue 12px uppercase di atas
+`--surface-subtle`, hover baris `--surface-hover`. Tabel native di halaman mengikuti pola yang sama
+lewat style lokal (header uppercase, angka mono rata kanan).
 
 ### Sidebar
 

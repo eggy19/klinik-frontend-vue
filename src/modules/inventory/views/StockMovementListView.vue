@@ -116,9 +116,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="movement-list">
+  <div class="movement-list kp-page">
     <div class="movement-list__head">
-      <h1 class="movement-list__title">Stock Movement</h1>
+      <h1 class="movement-list__title kp-title">Stock Movement</h1>
     </div>
 
     <BaseCard>
@@ -183,13 +183,13 @@ onMounted(() => {
 
         <template #cell-itemName="{ data }">
           <div class="movement-list__item">
-            <span>{{ data.itemName }}</span>
-            <span class="movement-list__item-code">{{ data.itemCode }}</span>
+            <span class="movement-list__item-name">{{ data.itemName }}</span>
+            <span class="movement-list__item-code kp-mono">{{ data.itemCode }}</span>
           </div>
         </template>
 
         <template #cell-batchNumber="{ data }">
-          {{ data.batchNumber ?? '-' }}
+          <span class="kp-mono">{{ data.batchNumber ?? '-' }}</span>
         </template>
 
         <template #cell-type="{ data }">
@@ -197,7 +197,7 @@ onMounted(() => {
         </template>
 
         <template #cell-quantity="{ data }">
-          <span :class="data.quantity < 0 ? 'movement-list__qty--out' : 'movement-list__qty--in'">
+          <span class="kp-mono" :class="data.quantity < 0 ? 'movement-list__qty--out' : 'movement-list__qty--in'">
             {{ formatSignedQuantity(data.quantity) }}
           </span>
         </template>
@@ -227,13 +227,12 @@ onMounted(() => {
   gap: var(--space-6);
 }
 
-.movement-list__title {
-  font-size: var(--font-2xl);
-  color: var(--text);
-}
-
 .movement-list__filter {
   min-width: 200px;
+}
+
+.movement-list__item-name {
+  font-weight: 600;
 }
 
 .movement-list__item {
@@ -247,12 +246,12 @@ onMounted(() => {
 }
 
 .movement-list__qty--in {
-  color: var(--color-success);
+  color: var(--color-success-text);
   font-weight: 600;
 }
 
 .movement-list__qty--out {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-weight: 600;
 }
 </style>

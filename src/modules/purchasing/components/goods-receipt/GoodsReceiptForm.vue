@@ -574,8 +574,8 @@ onMounted(async () => {
 
 .gr-form__section-title {
   margin: 0;
-  font-size: var(--font-lg);
-  font-weight: var(--font-weight-heading);
+  font-size: 15px;
+  font-weight: var(--font-weight-strong);
   color: var(--text);
 }
 
@@ -587,9 +587,13 @@ onMounted(async () => {
 
 .gr-form__table th {
   text-align: left;
-  padding: var(--space-2) var(--space-3);
-  font-weight: var(--font-weight-heading);
+  padding: var(--space-3);
+  font-size: var(--font-size-sm) !important;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--text-muted);
+  background: var(--surface-subtle);
   border-bottom: 1px solid var(--surface-border);
 }
 
@@ -598,13 +602,18 @@ onMounted(async () => {
   vertical-align: middle;
 }
 
+.gr-form__table tbody tr:not(.gr-pricing-panel__row) > td {
+  border-top: 1px solid var(--surface-border);
+}
+
 .gr-form__col-num {
   text-align: left;
 }
 
 .gr-form__col-computed {
+  font-family: var(--font-mono);
   color: var(--primary-color);
-  font-weight: var(--font-weight-heading);
+  font-weight: 600;
 }
 
 /* Menumpuk 2-3 kontrol (mis. qty+satuan, atau source+type+value) dalam satu <td>. */
@@ -617,15 +626,18 @@ onMounted(async () => {
 
 .gr-form__cell-stack--static {
   gap: 0;
+  font-family: var(--font-mono);
   font-size: var(--font-sm);
   color: var(--text-muted);
 }
 
 .gr-form__item-name {
   color: var(--text);
+  font-weight: 600;
 }
 
 .gr-form__item-code {
+  font-family: var(--font-mono);
   font-size: var(--font-xs);
   color: var(--text-muted);
 }
@@ -636,6 +648,7 @@ onMounted(async () => {
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-sm);
   font: inherit;
+  font-family: var(--font-mono);
   font-size: var(--font-sm);
   color: var(--text);
   background: var(--surface-0);

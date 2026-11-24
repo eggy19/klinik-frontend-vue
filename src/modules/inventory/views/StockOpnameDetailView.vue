@@ -81,10 +81,10 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="opname-detail">
+  <div class="opname-detail kp-page">
     <div class="opname-detail__head">
       <BaseButton icon="pi pi-arrow-left" label="Kembali" variant="ghost" @click="goBack" />
-      <h1 class="opname-detail__title">Detail Stock Opname</h1>
+      <h1 class="opname-detail__title kp-title">Detail Stock Opname</h1>
     </div>
 
     <div v-if="loading || !opname" class="opname-detail__loading">Memuat data...</div>
@@ -93,7 +93,7 @@ onMounted(load)
       <BaseCard>
         <div class="opname-detail__header">
           <div>
-            <div class="opname-detail__number">
+            <div class="opname-detail__number kp-mono">
               {{ opname.opnameNumber }}
               <BaseTag
                 :value="STOCK_OPNAME_STATUS_LABELS[opname.status]"
@@ -140,9 +140,9 @@ onMounted(load)
               <th>No.</th>
               <th>Item</th>
               <th>No. Batch</th>
-              <th>Qty Sistem</th>
-              <th>Qty Fisik</th>
-              <th>Selisih</th>
+              <th class="opname-detail__col-num">Qty Sistem</th>
+              <th class="opname-detail__col-num">Qty Fisik</th>
+              <th class="opname-detail__col-num">Selisih</th>
             </tr>
           </thead>
           <tbody>
@@ -152,10 +152,10 @@ onMounted(load)
                 <div class="opname-detail__item-name">{{ item.itemName }}</div>
                 <div class="opname-detail__item-code">{{ item.itemCode }}</div>
               </td>
-              <td>{{ item.batchNumber }}</td>
-              <td>{{ item.systemQuantity }}</td>
-              <td>{{ item.physicalQuantity }}</td>
-              <td :class="differenceClass(item.difference)">{{ difference(item.difference) }}</td>
+              <td class="opname-detail__mono opname-detail__batch">{{ item.batchNumber }}</td>
+              <td class="opname-detail__col-num">{{ item.systemQuantity }}</td>
+              <td class="opname-detail__col-num">{{ item.physicalQuantity }}</td>
+              <td class="opname-detail__col-num" :class="differenceClass(item.difference)">{{ difference(item.difference) }}</td>
             </tr>
           </tbody>
         </table>
@@ -177,14 +177,9 @@ onMounted(load)
   gap: var(--space-3);
 }
 
-.opname-detail__title {
-  font-size: var(--font-2xl);
-  color: var(--text);
-}
-
 .opname-detail__section-title {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-heading);
+  font-size: 15px;
+  font-weight: var(--font-weight-strong);
   color: var(--text);
 }
 
@@ -216,7 +211,10 @@ onMounted(load)
 }
 
 .opname-detail__meta dt {
-  font-size: var(--font-xs);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--text-muted);
 }
 
@@ -240,37 +238,69 @@ onMounted(load)
 
 .opname-detail__table th {
   text-align: left;
-  padding: var(--space-2) var(--space-3);
-  font-weight: var(--font-weight-heading);
+  padding: var(--space-3);
+  font-size: var(--font-size-sm) !important;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--text-muted);
+  background: var(--surface-subtle);
   border-bottom: 1px solid var(--surface-border);
 }
 
 .opname-detail__table td {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3);
+}
+
+.opname-detail__table tbody tr > td {
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.opname-detail__table tbody tr:last-child > td {
+  border-bottom: 0;
+}
+
+.opname-detail__table tbody tr:hover > td {
+  background: var(--surface-hover);
+}
+
+.opname-detail__mono,
+.opname-detail__col-num {
+  font-family: var(--font-mono);
+}
+
+.opname-detail__col-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.opname-detail__batch {
+  font-weight: 600;
 }
 
 .opname-detail__item-name {
   color: var(--text);
+  font-weight: 600;
 }
 
 .opname-detail__item-code {
+  font-family: var(--font-mono);
   font-size: var(--font-xs);
   color: var(--text-muted);
 }
 
 .opname-detail__diff--zero {
-  color: var(--color-success);
+  color: var(--color-success-text);
   font-weight: 600;
 }
 
 .opname-detail__diff--negative {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-weight: 600;
 }
 
 .opname-detail__diff--positive {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   font-weight: 600;
 }
 

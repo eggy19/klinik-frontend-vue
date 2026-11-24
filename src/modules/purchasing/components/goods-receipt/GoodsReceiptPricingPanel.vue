@@ -109,7 +109,7 @@ defineEmits<{
 
 <style scoped>
 .gr-pricing-panel__row {
-  background: var(--surface-50, var(--surface-0));
+  background: var(--surface-subtle);
 }
 
 .gr-pricing-panel__cell {
@@ -141,7 +141,8 @@ defineEmits<{
   margin-top: var(--space-2);
   padding: var(--space-3);
   border: 1px solid var(--surface-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
+  background: var(--bg);
 }
 
 .gr-pricing-panel__field {
@@ -152,13 +153,17 @@ defineEmits<{
 }
 
 .gr-pricing-panel__label {
-  font-size: var(--font-xs);
-  font-weight: var(--font-weight-heading);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--text-muted);
 }
 
 .gr-pricing-panel__value {
+  font-family: var(--font-mono);
   font-size: var(--font-sm);
+  font-weight: 600;
   color: var(--text);
 }
 
@@ -174,6 +179,7 @@ defineEmits<{
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-sm);
   font: inherit;
+  font-family: var(--font-mono);
   font-size: var(--font-sm);
   color: var(--text);
   background: var(--surface-0);

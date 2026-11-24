@@ -70,11 +70,15 @@ withDefaults(
   color: var(--text-muted);
 }
 
+.gr-totals__value {
+  font-family: var(--font-mono);
+}
+
 .gr-totals__row--grand {
   padding-top: var(--space-2);
   border-top: 1px solid var(--surface-border);
   font-size: var(--font-xl);
-  font-weight: var(--font-weight-heading);
+  font-weight: 600;
   color: var(--text);
 }
 </style>

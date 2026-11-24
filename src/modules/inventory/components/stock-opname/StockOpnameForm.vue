@@ -183,9 +183,9 @@ onMounted(loadBatches)
             <div class="opname-form__item-name">{{ row.itemName }}</div>
             <div class="opname-form__item-code">{{ row.itemCode }}</div>
           </td>
-          <td>{{ row.batchNumber }}</td>
+          <td class="opname-form__mono opname-form__batch">{{ row.batchNumber }}</td>
           <td>{{ formatDate(row.expiredDate) }}</td>
-          <td>{{ row.systemQuantity }}</td>
+          <td class="opname-form__mono">{{ row.systemQuantity }}</td>
           <td>
             <input
               type="number"
@@ -204,7 +204,7 @@ onMounted(loadBatches)
               {{ errors[`items.${i}.physicalQuantity`] }}
             </p>
           </td>
-          <td :class="differenceClass(row)">
+          <td class="opname-form__mono" :class="differenceClass(row)">
             {{ row.physicalQuantity === null ? '-' : difference(row) }}
           </td>
           <td>
@@ -284,9 +284,13 @@ onMounted(loadBatches)
 
 .opname-form__table th {
   text-align: left;
-  padding: var(--space-2) var(--space-3);
-  font-weight: var(--font-weight-heading);
+  padding: var(--space-3);
+  font-size: var(--font-size-sm) !important;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--text-muted);
+  background: var(--surface-subtle);
   border-bottom: 1px solid var(--surface-border);
 }
 
@@ -295,18 +299,34 @@ onMounted(loadBatches)
   vertical-align: middle;
 }
 
+.opname-form__table tbody tr > td {
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.opname-form__mono {
+  font-family: var(--font-mono);
+}
+
+.opname-form__batch {
+  font-weight: 600;
+}
+
 .opname-form__hint {
   display: block;
   font-size: var(--font-xs);
   font-weight: normal;
+  letter-spacing: normal;
+  text-transform: none;
   color: var(--text-muted);
 }
 
 .opname-form__item-name {
   color: var(--text);
+  font-weight: 600;
 }
 
 .opname-form__item-code {
+  font-family: var(--font-mono);
   font-size: var(--font-xs);
   color: var(--text-muted);
 }
@@ -317,6 +337,7 @@ onMounted(loadBatches)
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-sm);
   font: inherit;
+  font-family: var(--font-mono);
   font-size: var(--font-sm);
   color: var(--text);
   background: var(--surface-0);
@@ -329,17 +350,17 @@ onMounted(loadBatches)
 }
 
 .opname-form__diff--zero {
-  color: var(--color-success);
+  color: var(--color-success-text);
   font-weight: 600;
 }
 
 .opname-form__diff--negative {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-weight: 600;
 }
 
 .opname-form__diff--positive {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   font-weight: 600;
 }
 

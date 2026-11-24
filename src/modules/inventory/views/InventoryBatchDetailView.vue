@@ -64,10 +64,10 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="batch-detail">
+  <div class="batch-detail kp-page">
     <div class="batch-detail__head">
       <BaseButton icon="pi pi-arrow-left" label="Kembali" variant="ghost" @click="goBack" />
-      <h1 class="batch-detail__title">Detail Inventory Batch</h1>
+      <h1 class="batch-detail__title kp-title">Detail Inventory Batch</h1>
     </div>
 
     <div v-if="loading || !batch" class="batch-detail__loading">Memuat data...</div>
@@ -76,7 +76,7 @@ onMounted(load)
       <BaseCard>
         <div class="batch-detail__header">
           <div>
-            <div class="batch-detail__number">
+            <div class="batch-detail__number kp-mono">
               {{ batch.batchNumber }}
               <ExpiryStatusTag :expired-date="batch.expiredDate" />
             </div>
@@ -85,7 +85,7 @@ onMounted(load)
         </div>
       </BaseCard>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="kp-stats">
         <BaseSummaryCard title="Quantity" :value="`${batch.quantity} ${batch.unitName}`" icon="pi pi-box" variant="info" />
         <BaseSummaryCard title="Harga Satuan" :value="formatCurrency(batch.unitCost)" icon="pi pi-tag" variant="primary" />
         <BaseSummaryCard title="Nilai Total" :value="formatCurrency(totalValue)" icon="pi pi-wallet" variant="success" />
@@ -103,11 +103,11 @@ onMounted(load)
           </div>
           <div>
             <dt>Kode Item</dt>
-            <dd>{{ batch.itemCode }}</dd>
+            <dd class="kp-mono">{{ batch.itemCode }}</dd>
           </div>
           <div>
             <dt>No. Batch</dt>
-            <dd>{{ batch.batchNumber }}</dd>
+            <dd class="kp-mono">{{ batch.batchNumber }}</dd>
           </div>
           <div>
             <dt>Tanggal Kadaluarsa</dt>
@@ -127,7 +127,7 @@ onMounted(load)
           </div>
           <div>
             <dt>Goods Receipt</dt>
-            <dd>{{ batch.goodsReceiptNumber || '-' }}</dd>
+            <dd class="kp-mono">{{ batch.goodsReceiptNumber || '-' }}</dd>
           </div>
           <div>
             <dt>Tanggal Diterima</dt>
@@ -135,7 +135,7 @@ onMounted(load)
           </div>
           <div>
             <dt>Purchase Order</dt>
-            <dd>{{ batch.poNumber || '-' }}</dd>
+            <dd class="kp-mono">{{ batch.poNumber || '-' }}</dd>
           </div>
         </dl>
         <div class="batch-detail__actions">
@@ -172,14 +172,9 @@ onMounted(load)
   gap: var(--space-3);
 }
 
-.batch-detail__title {
-  font-size: var(--font-2xl);
-  color: var(--text);
-}
-
 .batch-detail__section-title {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-heading);
+  font-size: 15px;
+  font-weight: var(--font-weight-strong);
   color: var(--text);
 }
 
@@ -210,7 +205,10 @@ onMounted(load)
 }
 
 .batch-detail__meta dt {
-  font-size: var(--font-xs);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--text-muted);
 }
 

@@ -64,10 +64,10 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="gr-create">
+  <div class="gr-create kp-page">
     <div class="gr-create__head">
       <BaseButton icon="pi pi-arrow-left" label="Kembali" variant="ghost" @click="goBack" />
-      <h1 class="gr-create__title">Terima Barang</h1>
+      <h1 class="gr-create__title kp-title">Terima Barang</h1>
     </div>
 
     <div v-if="loading || !po" class="gr-create__loading">Memuat data...</div>
@@ -75,7 +75,7 @@ onMounted(load)
     <template v-else-if="receivable">
       <BaseCard>
         <div class="gr-create__po">
-          <span class="gr-create__po-number">{{ po.poNumber }}</span>
+          <span class="gr-create__po-number kp-mono">{{ po.poNumber }}</span>
           <span class="gr-create__po-supplier">{{ po.supplierName }}</span>
         </div>
         <GoodsReceiptForm :po="po" :submitting="submitting" @submit="onSubmit" @cancel="goBack" />
@@ -95,11 +95,6 @@ onMounted(load)
   display: flex;
   align-items: center;
   gap: var(--space-3);
-}
-
-.gr-create__title {
-  font-size: var(--font-2xl);
-  color: var(--text);
 }
 
 .gr-create__po {

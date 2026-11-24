@@ -172,10 +172,10 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="po-detail">
+  <div class="po-detail kp-page">
     <div class="po-detail__head">
       <BaseButton icon="pi pi-arrow-left" label="Kembali" variant="ghost" @click="goBack" />
-      <h1 class="po-detail__title">Detail Purchase Order</h1>
+      <h1 class="po-detail__title kp-title">Detail Purchase Order</h1>
     </div>
 
     <div v-if="loading || !po" class="po-detail__loading">Memuat data...</div>
@@ -186,7 +186,7 @@ onMounted(load)
           <BaseCard>
             <div class="po-detail__header">
               <div>
-                <div class="po-detail__po-number">{{ po.poNumber }}</div>
+                <div class="po-detail__po-number kp-mono">{{ po.poNumber }}</div>
                 <div class="po-detail__supplier">{{ po.supplierName }}</div>
               </div>
               <PurchaseOrderStatusTag :status="po.status" />
@@ -248,8 +248,10 @@ onMounted(load)
               :paginator="false"
               empty-title="Belum ada item"
             >
-              <template #cell-unitPrice="{ value }">{{ formatCurrency(value as number) }}</template>
-              <template #cell-subtotal="{ value }">{{ formatCurrency(value as number) }}</template>
+              <template #cell-quantity="{ value }"><span class="kp-mono">{{ value }}</span></template>
+              <template #cell-receivedQuantity="{ value }"><span class="kp-mono">{{ value }}</span></template>
+              <template #cell-unitPrice="{ value }"><span class="kp-mono">{{ formatCurrency(value as number) }}</span></template>
+              <template #cell-subtotal="{ value }"><span class="kp-mono">{{ formatCurrency(value as number) }}</span></template>
             </BaseDataTable>
           </BaseCard>
 
@@ -264,7 +266,7 @@ onMounted(load)
             <div v-else class="po-detail__receipts">
               <div v-for="r in receipts" :key="r.id" class="po-detail__receipt">
                 <div class="po-detail__receipt-head">
-                  <span class="po-detail__receipt-number">
+                  <span class="po-detail__receipt-number kp-mono">
                     {{ r.receiptNumber }}
                     <GoodsReceiptStatusTag :status="r.status" />
                   </span>
@@ -279,7 +281,9 @@ onMounted(load)
                   :paginator="false"
                   empty-title="Belum ada item"
                 >
-                  <template #cell-unitCost="{ value }">{{ formatCurrency(value as number) }}</template>
+                  <template #cell-quantity="{ value }"><span class="kp-mono">{{ value }}</span></template>
+                  <template #cell-batchNumber="{ value }"><span class="kp-mono">{{ value }}</span></template>
+                  <template #cell-unitCost="{ value }"><span class="kp-mono">{{ formatCurrency(value as number) }}</span></template>
                   <template #cell-expiredDate="{ value }">{{ formatDate(value as string | null) }}</template>
                 </BaseDataTable>
               </div>
@@ -311,9 +315,9 @@ onMounted(load)
                 Ringkasan Biaya
               </span>
             </template>
-            <div class="po-detail__total">
-              <span>Total</span>
-              <span class="po-detail__total-value">{{ formatCurrency(po.totalAmount) }}</span>
+            <div class="po-detail__total kp-total">
+              <span class="kp-total__label">Total PO</span>
+              <span class="po-detail__total-value kp-total__value">{{ formatCurrency(po.totalAmount) }}</span>
             </div>
           </BaseCard>
         </div>
@@ -357,17 +361,12 @@ onMounted(load)
   gap: var(--space-3);
 }
 
-.po-detail__title {
-  font-size: var(--font-2xl);
-  color: var(--text);
-}
-
 .po-detail__section-title {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-heading);
+  font-size: 15px;
+  font-weight: var(--font-weight-strong);
   color: var(--text);
 }
 
@@ -442,7 +441,10 @@ onMounted(load)
 }
 
 .po-detail__meta dt {
-  font-size: var(--font-xs);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--text-muted);
 }
 
@@ -457,17 +459,8 @@ onMounted(load)
   flex-wrap: wrap;
 }
 
-.po-detail__total {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-3);
-  align-items: baseline;
-}
-
 .po-detail__total-value {
   font-size: var(--font-xl);
-  font-weight: var(--font-weight-heading);
-  color: var(--text);
 }
 
 .po-detail__receipts {
@@ -478,7 +471,7 @@ onMounted(load)
 
 .po-detail__receipt {
   border: 1px solid var(--surface-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   padding: var(--space-3);
 }
 

@@ -47,10 +47,10 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="disp-detail">
+  <div class="disp-detail kp-page">
     <div class="disp-detail__head">
       <BaseButton icon="pi pi-arrow-left" label="Kembali" variant="ghost" @click="goBack" />
-      <h1 class="disp-detail__title">Detail Dispensing</h1>
+      <h1 class="disp-detail__title kp-title">Detail Dispensing</h1>
     </div>
 
     <div v-if="loading || !dispensing" class="disp-detail__loading">Memuat data...</div>
@@ -58,7 +58,7 @@ onMounted(load)
     <template v-else>
       <BaseCard>
         <div class="disp-detail__header">
-          <div class="disp-detail__number">{{ dispensing.dispensingNumber }}</div>
+          <div class="disp-detail__number kp-mono">{{ dispensing.dispensingNumber }}</div>
         </div>
         <dl class="disp-detail__meta">
           <div>
@@ -97,7 +97,7 @@ onMounted(load)
                   <div class="disp-detail__item-code">{{ item.itemCode }}</div>
                 </td>
                 <td>{{ item.unitName ?? '-' }}</td>
-                <td>{{ displayQuantity(item) }}</td>
+                <td class="disp-detail__mono">{{ displayQuantity(item) }}</td>
                 <td class="disp-detail__col-num">
                   {{ item.unitPrice != null ? formatCurrency(item.unitPrice) : '-' }}
                 </td>
@@ -127,7 +127,7 @@ onMounted(load)
                     </thead>
                     <tbody>
                       <tr v-for="alloc in item.batchAllocation" :key="alloc.batchId">
-                        <td>{{ alloc.batchNumber }}</td>
+                        <td class="disp-detail__mono disp-detail__batch">{{ alloc.batchNumber }}</td>
                         <td class="disp-detail__col-num">{{ alloc.quantity }}</td>
                         <td class="disp-detail__col-num">{{ formatCurrency(alloc.unitCost) }}</td>
                       </tr>
@@ -156,14 +156,9 @@ onMounted(load)
   gap: var(--space-3);
 }
 
-.disp-detail__title {
-  font-size: var(--font-2xl);
-  color: var(--text);
-}
-
 .disp-detail__section-title {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-heading);
+  font-size: 15px;
+  font-weight: var(--font-weight-strong);
   color: var(--text);
 }
 
@@ -188,7 +183,10 @@ onMounted(load)
 }
 
 .disp-detail__meta dt {
-  font-size: var(--font-xs);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--text-muted);
 }
 
@@ -205,37 +203,62 @@ onMounted(load)
 
 .disp-detail__table th {
   text-align: left;
-  padding: var(--space-2) var(--space-3);
-  font-weight: var(--font-weight-heading);
+  padding: var(--space-3);
+  font-size: var(--font-size-sm) !important;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--text-muted);
+  background: var(--surface-subtle);
   border-bottom: 1px solid var(--surface-border);
 }
 
 .disp-detail__table td {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3);
+}
+
+.disp-detail__table > tbody > tr > td {
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.disp-detail__table > tbody > tr:last-child > td {
+  border-bottom: 0;
+}
+
+.disp-detail__mono {
+  font-family: var(--font-mono);
+}
+
+.disp-detail__batch {
+  font-weight: 600;
 }
 
 .disp-detail__col-num {
-  text-align: left;
+  text-align: right;
+  font-family: var(--font-mono);
+  white-space: nowrap;
 }
 
 .disp-detail__col-computed {
   color: var(--primary-color);
-  font-weight: var(--font-weight-heading);
+  font-weight: 600;
 }
 
 .disp-detail__item-name {
   color: var(--text);
+  font-weight: 600;
 }
 
 .disp-detail__item-code {
+  font-family: var(--font-mono);
   font-size: var(--font-xs);
   color: var(--text-muted);
 }
 
+/* Panel alokasi batch (FEFO) per item */
 .disp-detail__allocation-row td {
   padding: 0 var(--space-3) var(--space-3) var(--space-3);
-  background: var(--surface-0);
+  background: var(--surface-subtle);
 }
 
 .disp-detail__allocation-table {
@@ -243,12 +266,15 @@ onMounted(load)
   border-collapse: collapse;
   font-size: var(--font-xs);
   margin-left: var(--space-6);
+  background: var(--bg);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
 }
 
 .disp-detail__allocation-table th {
   text-align: left;
   padding: var(--space-1) var(--space-2);
-  font-weight: var(--font-weight-heading);
+  font-weight: 600;
   color: var(--text-muted);
   border-bottom: 1px solid var(--surface-border);
 }

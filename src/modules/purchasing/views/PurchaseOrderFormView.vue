@@ -224,10 +224,10 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="po-form-view">
+  <div class="po-form-view kp-page">
     <div class="po-form-view__head">
       <BaseButton icon="pi pi-arrow-left" label="Kembali" variant="ghost" @click="goBack" />
-      <h1 class="po-form-view__title">{{ pageTitle }}</h1>
+      <h1 class="po-form-view__title kp-title">{{ pageTitle }}</h1>
     </div>
 
     <div v-if="loadingPo" class="po-form-view__loading">Memuat data...</div>
@@ -273,7 +273,7 @@ onMounted(async () => {
               <div v-if="isEditMode" class="po-form-view__meta">
                 <div>
                   <span class="po-form-view__meta-label">Nomor PO</span>
-                  <span class="po-form-view__meta-value">{{ poNumber }}</span>
+                  <span class="po-form-view__meta-value kp-mono">{{ poNumber }}</span>
                 </div>
                 <div>
                   <span class="po-form-view__meta-label">Tanggal Dibuat</span>
@@ -357,17 +357,12 @@ onMounted(async () => {
   gap: var(--space-3);
 }
 
-.po-form-view__title {
-  font-size: var(--font-2xl);
-  color: var(--text);
-}
-
 .po-form-view__section-title {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-heading);
+  font-size: 15px;
+  font-weight: var(--font-weight-strong);
   color: var(--text);
 }
 
@@ -412,7 +407,7 @@ onMounted(async () => {
   gap: var(--space-1);
   padding: var(--space-3);
   border-radius: var(--radius-sm);
-  background: var(--surface-0);
+  background: var(--surface-subtle);
   font-size: var(--font-sm);
   color: var(--text-muted);
 }

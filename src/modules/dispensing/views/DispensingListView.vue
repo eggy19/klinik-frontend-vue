@@ -44,9 +44,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="disp-list">
+  <div class="disp-list kp-page">
     <div class="disp-list__head">
-      <h1 class="disp-list__title">Dispensing</h1>
+      <h1 class="disp-list__title kp-title">Dispensing</h1>
       <BaseButton v-if="auth.can('inventory.dispensing.create')" label="Buat Dispensing" icon="pi pi-plus" @click="goCreate" />
     </div>
 
@@ -64,6 +64,10 @@ onMounted(() => {
         @page="onPage"
         @search="onSearch"
       >
+        <template #cell-dispensingNumber="{ data }">
+          <span class="kp-mono disp-list__no">{{ data.dispensingNumber }}</span>
+        </template>
+
         <template #cell-note="{ data }">
           {{ data.note ?? '-' }}
         </template>
@@ -99,8 +103,7 @@ onMounted(() => {
   justify-content: space-between;
 }
 
-.disp-list__title {
-  font-size: var(--font-2xl);
-  color: var(--text);
+.disp-list__no {
+  font-weight: 600;
 }
 </style>

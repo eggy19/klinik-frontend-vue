@@ -40,7 +40,49 @@ const surfaceScale = {
   950: '#0f1d1a',
 }
 
+// Palet severity Tag/Message/Toast mengikuti token status (_colors.scss) lewat CSS variable,
+// sehingga otomatis ikut tema light/dark (docs/02-design-system.md).
+const tagScheme = {
+  primary: { background: 'var(--color-primary-soft)', color: 'var(--color-primary-soft-text)' },
+  secondary: { background: 'var(--color-neutral-soft)', color: 'var(--color-neutral-text)' },
+  success: { background: 'var(--color-success-soft)', color: 'var(--color-success-text)' },
+  info: { background: 'var(--color-info-soft)', color: 'var(--color-info-text)' },
+  warn: { background: 'var(--color-warning-soft)', color: 'var(--color-warning-text)' },
+  danger: { background: 'var(--color-danger-soft)', color: 'var(--color-danger-text)' },
+}
+
+function messageTone(soft: string, text: string, accent: string) {
+  return {
+    background: `var(${soft})`,
+    borderColor: `color-mix(in srgb, var(${accent}), transparent 65%)`,
+    color: `var(${text})`,
+    detailColor: 'var(--text)',
+    shadow: 'var(--shadow-md)',
+    closeButton: {
+      hoverBackground: `color-mix(in srgb, var(${accent}), transparent 85%)`,
+      focusRing: { color: `var(${accent})`, shadow: 'none' },
+    },
+    outlined: { color: `var(${text})`, borderColor: `var(${accent})` },
+    simple: { color: `var(${text})` },
+  }
+}
+
+const messageScheme = {
+  info: messageTone('--color-info-soft', '--color-info-text', '--color-info'),
+  success: messageTone('--color-success-soft', '--color-success-text', '--color-success'),
+  warn: messageTone('--color-warning-soft', '--color-warning-text', '--color-warning'),
+  error: messageTone('--color-danger-soft', '--color-danger-text', '--color-danger'),
+}
+
 const KlinikPreset = definePreset(Aura, {
+  components: {
+    tag: {
+      root: { fontWeight: '600', borderRadius: '6px' },
+      colorScheme: { light: tagScheme, dark: tagScheme },
+    },
+    message: { colorScheme: { light: messageScheme, dark: messageScheme } },
+    toast: { colorScheme: { light: messageScheme, dark: messageScheme } },
+  },
   semantic: {
     primary: {
       50: '#e6f4ef',

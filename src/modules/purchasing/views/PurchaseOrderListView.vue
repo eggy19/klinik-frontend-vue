@@ -134,12 +134,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="po-list">
+  <div class="po-list kp-page">
     <div class="po-list__head">
-      <h1 class="po-list__title">Purchase Order</h1>
+      <h1 class="po-list__title kp-title">Purchase Order</h1>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div class="kp-stats">
       <BaseSummaryCard
         title="Total PO Aktif"
         :value="store.stats.totalActive"
@@ -154,13 +154,15 @@ onMounted(() => {
         variant="warning"
         :loading="store.statsLoading"
       />
-      <BaseSummaryCard
-        title="Belanja Bulan Ini"
-        :value="formatCurrency(store.stats.monthlySpend)"
-        icon="pi pi-wallet"
-        variant="success"
-        :loading="store.statsLoading"
-      />
+      <div class="kp-stat--dark">
+        <BaseSummaryCard
+          title="Belanja Bulan Ini"
+          :value="formatCurrency(store.stats.monthlySpend)"
+          icon="pi pi-wallet"
+          variant="success"
+          :loading="store.statsLoading"
+        />
+      </div>
     </div>
 
     <BaseCard>
@@ -190,12 +192,16 @@ onMounted(() => {
           <BaseButton label="Buat Purchase Order" icon="pi pi-plus" @click="goCreate" />
         </template>
 
+        <template #cell-poNumber="{ data }">
+          <span class="kp-mono po-list__no">{{ data.poNumber }}</span>
+        </template>
+
         <template #cell-status="{ data }">
           <PurchaseOrderStatusTag :status="data.status" />
         </template>
 
         <template #cell-totalAmount="{ data }">
-          {{ formatCurrency(data.totalAmount) }}
+          <span class="kp-mono">{{ formatCurrency(data.totalAmount) }}</span>
         </template>
 
         <template #cell-createdAt="{ data }">
@@ -229,9 +235,8 @@ onMounted(() => {
   gap: var(--space-6);
 }
 
-.po-list__title {
-  font-size: var(--font-2xl);
-  color: var(--text);
+.po-list__no {
+  font-weight: 600;
 }
 
 .po-list__tabs {

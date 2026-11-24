@@ -90,8 +90,10 @@ const displayRows = computed<PoItemRow[]>(() =>
         />
       </template>
 
-      <template #cell-unitPrice="{ value }">{{ formatCurrency(value as number) }}</template>
-      <template #cell-subtotal="{ value }">{{ formatCurrency(value as number) }}</template>
+      <template #cell-itemCode="{ value }"><span class="kp-mono">{{ value }}</span></template>
+      <template #cell-quantity="{ value }"><span class="kp-mono">{{ value }}</span></template>
+      <template #cell-unitPrice="{ value }"><span class="kp-mono">{{ formatCurrency(value as number) }}</span></template>
+      <template #cell-subtotal="{ value }"><span class="kp-mono">{{ formatCurrency(value as number) }}</span></template>
 
       <template #row-actions="{ data }">
         <BaseButton

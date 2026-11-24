@@ -41,10 +41,10 @@ async function onSubmit(input: CreateDispensingInput) {
 </script>
 
 <template>
-  <div class="disp-create">
+  <div class="disp-create kp-page">
     <div class="disp-create__head">
       <BaseButton icon="pi pi-arrow-left" label="Kembali" variant="ghost" @click="goBack" />
-      <h1 class="disp-create__title">Buat Dispensing</h1>
+      <h1 class="disp-create__title kp-title">Buat Dispensing</h1>
     </div>
 
     <BaseCard>
@@ -64,10 +64,5 @@ async function onSubmit(input: CreateDispensingInput) {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-}
-
-.disp-create__title {
-  font-size: var(--font-2xl);
-  color: var(--text);
 }
 </style>

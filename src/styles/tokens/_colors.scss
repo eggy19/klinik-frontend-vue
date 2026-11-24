@@ -13,6 +13,28 @@
   --color-danger: #c4492f;
   --color-info: #5b74d6;
 
+  // Status: latar lembut + teks (tag, banner, pesan). Dipakai PrimeVue Tag/Message/Toast (main.ts).
+  --color-success-soft: #d4ece3;
+  --color-success-text: #14533f;
+  --color-warning-soft: #fcf1dc;
+  --color-danger-soft: #fbe6df;
+  --color-danger-text: #a63d24;
+  --color-info-soft: #e3ecfb;
+  --color-info-text: #2b56ad;
+  --color-neutral-soft: #eceae4;
+  --color-neutral-text: #5d6b66;
+
+  // Latar header tabel / footer total (satu tingkat di atas kartu).
+  --surface-subtle: #faf9f6;
+
+  // Panel gelap (panel harga GR, kartu ringkasan sekunder). Konstan di kedua tema.
+  --panel-dark-bg: #0f1d1a;
+  --panel-dark-text: #e6efeb;
+  --panel-dark-muted: #8ea39c;
+  --panel-dark-border: rgba(255, 255, 255, 0.1);
+  --panel-dark-accent: #4fd1ad;
+  --panel-dark-danger: #f0b19f;
+
   // Sidebar selalu gelap di kedua tema (mockup).
   --sidebar-bg: #10201c;
   --sidebar-text-strong: #ffffff;
@@ -44,4 +66,16 @@
   --color-warning-text: #f0c27a;
   --color-danger: #ee7b62;
   --color-info: #8fa8ff;
+
+  --color-success-soft: rgba(79, 209, 173, 0.16);
+  --color-success-text: #8fe0c6;
+  --color-warning-soft: rgba(231, 165, 83, 0.16);
+  --color-danger-soft: rgba(238, 123, 98, 0.16);
+  --color-danger-text: #f4a592;
+  --color-info-soft: rgba(143, 168, 255, 0.16);
+  --color-info-text: #b3c4ff;
+  --color-neutral-soft: #1c302a;
+  --color-neutral-text: #8ea39c;
+
+  --surface-subtle: #101f1b;
 }

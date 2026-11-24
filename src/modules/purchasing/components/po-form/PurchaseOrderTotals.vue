@@ -13,28 +13,14 @@ const total = computed(() =>
 </script>
 
 <template>
-  <div class="po-totals">
-    <span class="po-totals__label">Total</span>
-    <span class="po-totals__value">{{ formatCurrency(total) }}</span>
+  <div class="po-totals kp-total">
+    <span class="kp-total__label">Total PO</span>
+    <span class="kp-total__value po-totals__value">{{ formatCurrency(total) }}</span>
   </div>
 </template>
 
 <style scoped>
-.po-totals {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: var(--space-3);
-}
-
-.po-totals__label {
-  font-size: var(--font-sm);
-  color: var(--text-muted);
-}
-
 .po-totals__value {
   font-size: var(--font-xl);
-  font-weight: var(--font-weight-heading);
-  color: var(--text);
 }
 </style>

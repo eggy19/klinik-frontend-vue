@@ -54,12 +54,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="stock-list">
+  <div class="stock-list kp-page">
     <div class="stock-list__head">
-      <h1 class="stock-list__title">Stock</h1>
+      <h1 class="stock-list__title kp-title">Stock</h1>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="kp-stats">
       <BaseSummaryCard
         title="Total Item"
         :value="store.pagination.total"
@@ -104,8 +104,16 @@ onMounted(() => {
           </div>
         </template>
 
+        <template #cell-itemCode="{ data }">
+          <span class="kp-mono">{{ data.itemCode }}</span>
+        </template>
+
+        <template #cell-batchCount="{ data }">
+          <span class="kp-mono">{{ data.batchCount }}</span>
+        </template>
+
         <template #cell-totalQuantity="{ data }">
-          {{ data.totalQuantity.toLocaleString('id-ID', { maximumFractionDigits: 4 }) }}
+          <span class="kp-mono">{{ data.totalQuantity.toLocaleString('id-ID', { maximumFractionDigits: 4 }) }}</span>
         </template>
 
         <template #cell-nearestExpiry="{ data }">
@@ -131,15 +139,11 @@ onMounted(() => {
   gap: var(--space-6);
 }
 
-.stock-list__title {
-  font-size: var(--font-2xl);
-  color: var(--text);
-}
-
 .stock-list__item {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  font-weight: 600;
 }
 
 .stock-list__expiry {

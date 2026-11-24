@@ -33,10 +33,10 @@ async function onSubmit(input: CreateStockOpnameInput) {
 </script>
 
 <template>
-  <div class="opname-create">
+  <div class="opname-create kp-page">
     <div class="opname-create__head">
       <BaseButton icon="pi pi-arrow-left" label="Kembali" variant="ghost" @click="goBack" />
-      <h1 class="opname-create__title">Buat Stock Opname</h1>
+      <h1 class="opname-create__title kp-title">Buat Stock Opname</h1>
     </div>
 
     <BaseCard>
@@ -56,10 +56,5 @@ async function onSubmit(input: CreateStockOpnameInput) {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-}
-
-.opname-create__title {
-  font-size: var(--font-2xl);
-  color: var(--text);
 }
 </style>

@@ -120,10 +120,10 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="gr-detail">
+  <div class="gr-detail kp-page">
     <div class="gr-detail__head">
       <BaseButton icon="pi pi-arrow-left" label="Kembali" variant="ghost" @click="goBack" />
-      <h1 class="gr-detail__title">Detail Penerimaan Barang</h1>
+      <h1 class="gr-detail__title kp-title">Detail Penerimaan Barang</h1>
     </div>
 
     <div v-if="loading || !receipt" class="gr-detail__loading">Memuat data...</div>
@@ -132,7 +132,7 @@ onMounted(load)
       <BaseCard>
         <div class="gr-detail__header">
           <div>
-            <div class="gr-detail__number">
+            <div class="gr-detail__number kp-mono">
               {{ receipt.receiptNumber }}
               <GoodsReceiptStatusTag :status="receipt.status" />
             </div>
@@ -197,8 +197,8 @@ onMounted(load)
                 <div class="gr-detail__item-name">{{ item.itemName }}</div>
                 <div class="gr-detail__item-code">{{ item.itemCode }}</div>
               </td>
-              <td>{{ item.quantity }} {{ item.unitName }}</td>
-              <td>{{ item.batchNumber }}</td>
+              <td class="kp-mono">{{ item.quantity }} {{ item.unitName }}</td>
+              <td class="kp-mono gr-detail__batch">{{ item.batchNumber }}</td>
               <td>{{ formatDate(item.expiredDate) }}</td>
               <td class="gr-detail__col-num">{{ formatCurrency(item.unitCost) }}</td>
               <td class="gr-detail__col-num">
@@ -270,14 +270,9 @@ onMounted(load)
   gap: var(--space-3);
 }
 
-.gr-detail__title {
-  font-size: var(--font-2xl);
-  color: var(--text);
-}
-
 .gr-detail__section-title {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-heading);
+  font-size: 15px;
+  font-weight: var(--font-weight-strong);
   color: var(--text);
 }
 
@@ -309,7 +304,10 @@ onMounted(load)
 }
 
 .gr-detail__meta dt {
-  font-size: var(--font-xs);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--text-muted);
 }
 
@@ -333,30 +331,54 @@ onMounted(load)
 
 .gr-detail__table th {
   text-align: left;
-  padding: var(--space-2) var(--space-3);
-  font-weight: var(--font-weight-heading);
+  padding: var(--space-3);
+  font-size: var(--font-size-sm) !important;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--text-muted);
+  background: var(--surface-subtle);
   border-bottom: 1px solid var(--surface-border);
 }
 
 .gr-detail__table td {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3);
+}
+
+.gr-detail__table tbody tr > td {
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.gr-detail__table tbody tr:last-child > td {
+  border-bottom: 0;
+}
+
+.gr-detail__table tbody tr:hover > td {
+  background: var(--surface-hover);
 }
 
 .gr-detail__col-num {
-  text-align: left;
+  text-align: right;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+.gr-detail__batch {
+  font-weight: 600;
 }
 
 .gr-detail__col-computed {
   color: var(--primary-color);
-  font-weight: var(--font-weight-heading);
+  font-weight: 600;
 }
 
 .gr-detail__item-name {
   color: var(--text);
+  font-weight: 600;
 }
 
 .gr-detail__item-code {
+  font-family: var(--font-mono);
   font-size: var(--font-xs);
   color: var(--text-muted);
 }
@@ -365,19 +387,19 @@ onMounted(load)
   display: inline-block;
   padding: 0 var(--space-1);
   margin-right: var(--space-1);
-  border-radius: var(--radius-sm);
+  border-radius: 6px;
   font-size: var(--font-xs);
-  font-weight: var(--font-weight-heading);
+  font-weight: 600;
 }
 
 .gr-detail__margin-badge--default {
-  background: var(--surface-100, var(--surface-50));
-  color: var(--text-muted);
+  background: var(--color-neutral-soft);
+  color: var(--color-neutral-text);
 }
 
 .gr-detail__margin-badge--manual {
-  background: var(--primary-color-alpha, var(--primary-color));
-  color: var(--primary-contrast, var(--surface-0));
+  background: var(--color-primary-soft);
+  color: var(--color-primary-soft-text);
 }
 
 .gr-detail__totals {

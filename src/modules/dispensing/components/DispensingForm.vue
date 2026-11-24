@@ -289,7 +289,7 @@ onMounted(async () => {
 
 .disp-form__note-label {
   font-size: var(--font-sm);
-  font-weight: var(--font-weight-heading);
+  font-weight: 600;
   color: var(--text);
 }
 
@@ -318,9 +318,13 @@ onMounted(async () => {
 
 .disp-form__table th {
   text-align: left;
-  padding: var(--space-2) var(--space-3);
-  font-weight: var(--font-weight-heading);
+  padding: var(--space-3);
+  font-size: var(--font-size-sm) !important;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--text-muted);
+  background: var(--surface-subtle);
   border-bottom: 1px solid var(--surface-border);
 }
 
@@ -330,13 +334,19 @@ onMounted(async () => {
   min-width: 140px;
 }
 
+.disp-form__table tbody tr > td {
+  border-bottom: 1px solid var(--surface-border);
+}
+
 .disp-form__col-num {
-  text-align: left;
+  text-align: right;
+  font-family: var(--font-mono);
+  white-space: nowrap;
 }
 
 .disp-form__col-computed {
   color: var(--primary-color);
-  font-weight: var(--font-weight-heading);
+  font-weight: 600;
 }
 
 .disp-form__input {
@@ -345,6 +355,7 @@ onMounted(async () => {
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-sm);
   font: inherit;
+  font-family: var(--font-mono);
   font-size: var(--font-sm);
   color: var(--text);
   background: var(--surface-0);
@@ -365,7 +376,21 @@ onMounted(async () => {
 }
 
 .disp-form__grand-total {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--surface-subtle);
   font-size: var(--font-size-base);
+  color: var(--text-muted);
+}
+
+.disp-form__grand-total strong {
+  font-family: var(--font-mono);
+  font-size: var(--font-lg);
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text);
 }
 
