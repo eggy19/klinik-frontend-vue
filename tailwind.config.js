@@ -5,6 +5,11 @@ export default {
   content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        // Nilai sama dengan --font-family / --font-mono (styles/tokens/_typography.scss).
+        sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', '"Segoe UI"', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
+      },
       screens: {
         // Sesuai docs/07-responsive-guideline.md
         md: '768px', // tablet

@@ -85,7 +85,7 @@ Hindari shadow berat.
 
 Font:
 
-Inter
+Plus Jakarta Sans (UI), JetBrains Mono (angka/kode) — lihat `02-design-system.md`
 
 Heading:
 

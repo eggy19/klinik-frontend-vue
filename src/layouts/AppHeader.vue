@@ -99,7 +99,10 @@ async function onLogout() {
   align-items: center;
   justify-content: space-between;
   padding: 0 var(--space-6);
-  background-color: var(--bg);
+  /* Krem semi-transparan + blur seperti mockup; fallback solid untuk browser lama. */
+  background-color: var(--surface);
+  background-color: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
 }
 
@@ -117,7 +120,8 @@ async function onLogout() {
 }
 
 .header__tenant {
-  font-weight: var(--font-weight-heading);
+  font-weight: var(--font-weight-strong);
+  letter-spacing: -0.01em;
   color: var(--text);
   font-size: var(--font-sm);
 }

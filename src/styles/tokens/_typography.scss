@@ -1,7 +1,9 @@
-// Typography (docs/02-design-system.md). Font Frutiger LT, heading 600 / body 400.
+// Typography (docs/02-design-system.md). Plus Jakarta Sans (UI) + JetBrains Mono (angka/kode),
+// di-self-host lewat @fontsource (diimpor di main.ts). Heading 600 / body 400.
 // Compact density: base font-size 0.8125rem (13px @ root 16px, root TIDAK diubah).
 :root {
-  --font-family: 'Frutiger LT', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
 
   // Skala lama (px) — dipertahankan untuk heading/elemen besar (h1-h6, judul kartu, dsb.)
   // yang sengaja tidak termasuk cakupan compact-density (lihat overrides/_compact-density.scss).
@@ -21,4 +23,5 @@
 
   --font-weight-body: 400;
   --font-weight-heading: 600;
+  --font-weight-strong: 700; // brand, nama tenant
 }

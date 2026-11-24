@@ -6,6 +6,15 @@ import ConfirmationService from 'primevue/confirmationservice'
 import Aura from '@primevue/themes/aura'
 import { definePreset } from '@primevue/themes'
 
+// Font self-hosted (docs/02-design-system.md): Plus Jakarta Sans (UI) + JetBrains Mono (angka/kode).
+import '@fontsource/plus-jakarta-sans/latin-400.css'
+import '@fontsource/plus-jakarta-sans/latin-500.css'
+import '@fontsource/plus-jakarta-sans/latin-600.css'
+import '@fontsource/plus-jakarta-sans/latin-700.css'
+import '@fontsource/jetbrains-mono/latin-400.css'
+import '@fontsource/jetbrains-mono/latin-500.css'
+import '@fontsource/jetbrains-mono/latin-600.css'
+
 import 'primeicons/primeicons.css'
 import './styles/tailwind.css'
 import './styles/main.scss'
@@ -14,21 +23,58 @@ import App from './App.vue'
 import router from './router'
 import { useThemeStore } from './stores/theme'
 
-// Preset PrimeVue dengan primary biru (#2563EB ≈ blue.600), selaras design system.
+// Preset PrimeVue: primary hijau tua (#1f7a66 = primary.600) dan surface hangat
+// kehijauan, selaras mockup UI/UX & docs/02-design-system.md.
+const surfaceScale = {
+  0: '#ffffff',
+  50: '#f7f6f2',
+  100: '#f5f4ef',
+  200: '#e9e7e0',
+  300: '#d3d8d4',
+  400: '#a3b0ab',
+  500: '#6f857e',
+  600: '#5d6b66',
+  700: '#2a3d37',
+  800: '#1c302a',
+  900: '#14231f',
+  950: '#0f1d1a',
+}
+
 const KlinikPreset = definePreset(Aura, {
   semantic: {
     primary: {
-      50: '{blue.50}',
-      100: '{blue.100}',
-      200: '{blue.200}',
-      300: '{blue.300}',
-      400: '{blue.400}',
-      500: '{blue.500}',
-      600: '{blue.600}',
-      700: '{blue.700}',
-      800: '{blue.800}',
-      900: '{blue.900}',
-      950: '{blue.950}',
+      50: '#e6f4ef',
+      100: '#cfe9df',
+      200: '#a3d4c3',
+      300: '#6fb9a2',
+      400: '#3fa088',
+      500: '#1f8a74',
+      600: '#1f7a66',
+      700: '#17604f',
+      800: '#14533f',
+      900: '#0f3f31',
+      950: '#0a2a21',
+    },
+    colorScheme: {
+      light: {
+        surface: surfaceScale,
+        // Aura default memakai primary.500; mockup memakai 600 sebagai warna utama.
+        primary: {
+          color: '{primary.600}',
+          contrastColor: '#ffffff',
+          hoverColor: '{primary.700}',
+          activeColor: '{primary.800}',
+        },
+      },
+      dark: {
+        surface: surfaceScale,
+        primary: {
+          color: '{primary.400}',
+          contrastColor: '{surface.950}',
+          hoverColor: '{primary.300}',
+          activeColor: '{primary.200}',
+        },
+      },
     },
   },
 })

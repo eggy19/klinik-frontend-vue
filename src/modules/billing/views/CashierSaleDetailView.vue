@@ -292,7 +292,7 @@ const itemRows = computed(() =>
 }
 
 .alert--warn {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   border-color: var(--color-warning);
 }
 

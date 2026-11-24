@@ -11,6 +11,8 @@
     "format": "prettier --write \"src/**/*.{vue,ts,scss,css}\""
   },
   "dependencies": {
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@fontsource/plus-jakarta-sans": "^5.3.0",
     "@primevue/themes": "^4.2.5",
     "axios": "^1.7.9",
     "pinia": "^2.3.0",

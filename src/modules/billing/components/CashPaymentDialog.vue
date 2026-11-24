@@ -307,7 +307,7 @@ const header = computed(() => {
 }
 
 .pay__status--warn {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .pay__confirm {

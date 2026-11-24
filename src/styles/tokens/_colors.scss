@@ -1,15 +1,47 @@
 // Brand / status colors (docs/02-design-system.md).
 // Nilai konstan lintas tema; warna surface/teks diatur di themes/.
 :root {
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
+  --color-primary: #1f7a66;
+  --color-primary-hover: #17604f;
   --color-primary-contrast: #ffffff;
+  --color-primary-soft: #e6f4ef; // latar lembut (badge/highlight)
+  --color-primary-soft-text: #14533f;
 
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-danger: #ef4444;
-  --color-info: #06b6d4;
+  --color-success: #1f8a74;
+  --color-warning: #d98a2b;
+  --color-warning-text: #a8651a; // warna TEKS peringatan (kontras >= 4,5:1 di latar putih)
+  --color-danger: #c4492f;
+  --color-info: #5b74d6;
+
+  // Sidebar selalu gelap di kedua tema (mockup).
+  --sidebar-bg: #10201c;
+  --sidebar-text-strong: #ffffff;
+  --sidebar-scrollbar: rgba(255, 255, 255, 0.15);
+  --sidebar-text: #d9e3df;
+  --sidebar-text-dim: #b9c7c2;
+  --sidebar-muted: #8ea39c;
+  --sidebar-title: #6f857e;
+  --sidebar-hover: rgba(255, 255, 255, 0.06);
+  --sidebar-active-bg: rgba(79, 209, 173, 0.12);
+  --sidebar-accent: #4fd1ad;
+  --sidebar-brand: #2f9c84;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
 
   // Alias semantik yang dipakai komponen
   --primary-color: var(--color-primary);
+}
+
+.app-dark {
+  // Primary lebih terang agar terbaca di latar gelap.
+  --color-primary: #3fa088;
+  --color-primary-hover: #6fb9a2;
+  --color-primary-contrast: #0f1d1a;
+  --color-primary-soft: rgba(79, 209, 173, 0.14);
+  --color-primary-soft-text: #8fe0c6;
+
+  --color-success: #4fd1ad;
+  --color-warning: #e7a553;
+  --color-warning-text: #f0c27a;
+  --color-danger: #ee7b62;
+  --color-info: #8fa8ff;
 }

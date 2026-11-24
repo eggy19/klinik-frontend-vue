@@ -1,11 +1,12 @@
 // Dark theme — diaktifkan via class `.app-dark` pada <html> (lihat stores/theme).
+// Varian gelap dari palet hijau mockup: latar halaman #0f1d1a, kartu #14231f.
 .app-dark {
-  --bg: #111827;
-  --surface: #1f2937;
-  --surface-hover: #273244;
-  --border: #374151;
-  --text: #f9fafb;
-  --text-muted: #9ca3af;
+  --bg: #14231f;
+  --surface: #0f1d1a;
+  --surface-hover: #1c302a;
+  --border: #2a3d37;
+  --text: #e6efeb;
+  --text-muted: #8ea39c;
 
   --surface-border: var(--border);
   --surface-0: var(--bg);

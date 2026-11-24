@@ -124,7 +124,7 @@ function onSubmit() {
 }
 
 .close-shift__diff--bad {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .close-shift__error {

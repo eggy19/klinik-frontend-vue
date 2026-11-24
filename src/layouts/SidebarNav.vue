@@ -68,33 +68,47 @@ watch(
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  padding: var(--space-3);
+  padding: var(--space-1) var(--space-3) var(--space-4);
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--sidebar-scrollbar) transparent;
 }
 
 .nav__link {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-  color: var(--text);
-  min-height: 44px;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--sidebar-text-dim);
+  min-height: 40px;
   width: 100%;
   background: none;
   border: none;
   font: inherit;
+  font-weight: 500;
   cursor: pointer;
   text-align: left;
-  transition: background-color 0.15s ease;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .nav__link:hover {
-  background-color: var(--surface-hover);
+  background-color: var(--sidebar-hover);
+  color: var(--sidebar-text-strong);
 }
 
 .nav__link.router-link-exact-active {
-  background-color: var(--primary-color);
-  color: var(--color-primary-contrast);
+  background-color: var(--sidebar-active-bg);
+  color: var(--sidebar-text-strong);
+  font-weight: 600;
+}
+
+.nav__link:focus-visible {
+  outline-color: var(--sidebar-accent);
 }
 
 .nav__icon {

@@ -1,16 +1,29 @@
 # Design System
 
+Identitas visual mengikuti mockup `UI-UX/*.dc.html` (hijau tua, latar krem, sidebar gelap).
+Sumber kebenaran token ada di `src/styles/tokens/` dan `src/styles/themes/`; preset PrimeVue
+di `src/main.ts`. Semua warna dipakai lewat CSS variables (tidak ada hex hardcode di komponen).
+
 ## Typography
 
-Primary Font:
+| Peran | Font | Dipakai untuk |
+| ----- | ---- | ------------- |
+| UI (`--font-family`, Tailwind `font-sans`) | Plus Jakarta Sans 400/500/600/700 | Seluruh teks antarmuka |
+| Mono (`--font-mono`, Tailwind `font-mono`) | JetBrains Mono 400/500/600 | Angka/nominal, kode, nomor dokumen |
 
-Inter
+Fallback: `system-ui, -apple-system, 'Segoe UI', sans-serif`.
 
-Fallback:
+Font di-**self-host** lewat paket npm `@fontsource/plus-jakarta-sans` dan
+`@fontsource/jetbrains-mono` (subset latin, diimpor di `src/main.ts`). Jangan memuat font
+dari CDN (Google Fonts). Font lama (Frutiger LT di `public/font/frutiger/`) tidak dipakai lagi.
 
-sans-serif
+Kelas mono dipakai bertahap oleh halaman (tahap 1b): `class="font-mono"` atau
+`font-family: var(--font-mono)`.
 
 ### Font Size
+
+Density compact: base 13px (`--font-size-base`), badge 12px, caption 10px
+(`overrides/_compact-density.scss`). Skala heading/elemen besar:
 
 | Token | Size |
 | ----- | ---- |
@@ -26,89 +39,98 @@ sans-serif
 
 ## Colors
 
-Primary
+### Primary (hijau)
 
-#2563EB
+Skala PrimeVue `primary` (di `main.ts`); warna utama = 600.
 
-Success
+| Step | Hex |
+| ---- | --- |
+| 50 | `#e6f4ef` |
+| 100 | `#cfe9df` |
+| 200 | `#a3d4c3` |
+| 300 | `#6fb9a2` |
+| 400 | `#3fa088` |
+| 500 | `#1f8a74` |
+| 600 | `#1f7a66` (utama, light) |
+| 700 | `#17604f` (hover) |
+| 800 | `#14533f` |
+| 900 | `#0f3f31` |
+| 950 | `#0a2a21` |
 
-#22C55E
+### Token CSS variable
 
-Warning
+| Variable | Light | Dark (`.app-dark`) |
+| -------- | ----- | ------------------ |
+| `--color-primary` / `--primary-color` | `#1f7a66` | `#3fa088` |
+| `--color-primary-hover` | `#17604f` | `#6fb9a2` |
+| `--color-primary-contrast` | `#ffffff` | `#0f1d1a` |
+| `--color-primary-soft` / `-soft-text` | `#e6f4ef` / `#14533f` | `rgba(79,209,173,.14)` / `#8fe0c6` |
+| `--color-success` | `#1f8a74` | `#4fd1ad` |
+| `--color-warning` | `#d98a2b` | `#e7a553` |
+| `--color-warning-text` | `#a8651a` | `#f0c27a` |
+| `--color-danger` | `#c4492f` | `#ee7b62` |
+| `--color-info` | `#5b74d6` | `#8fa8ff` |
+| `--bg` (kartu/komponen) | `#ffffff` | `#14231f` |
+| `--surface` (latar halaman) | `#f5f4ef` | `#0f1d1a` |
+| `--surface-hover` | `#eeece6` | `#1c302a` |
+| `--border` | `#e3e5e0` | `#2a3d37` |
+| `--text` | `#14231f` | `#e6efeb` |
+| `--text-muted` | `#5d6b66` | `#8ea39c` |
 
-#F59E0B
+`--color-warning` (`#d98a2b`) hanya untuk isian/border/ikon; untuk **teks** peringatan pakai
+`--color-warning-text` (kontras >= 4,5:1 di latar kartu). `--font-weight-strong` (700) untuk brand
+dan nama tenant; token sidebar tambahan: `--sidebar-text-strong` (`#ffffff`), `--sidebar-scrollbar`.
 
-Danger
+Catatan: komponen PrimeVue (Tag/Message/Toast) memakai palet severity bawaan Aura
+(green/orange/red/sky), bukan `--color-success` dst. Penyelarasannya masuk tahap berikutnya.
 
-#EF4444
+### Sidebar
 
-Info
+Sidebar **selalu gelap** di kedua tema. Token (konstan, `tokens/_colors.scss`):
 
-#06B6D4
+| Variable | Nilai | Fungsi |
+| -------- | ----- | ------ |
+| `--sidebar-bg` | `#10201c` | Latar |
+| `--sidebar-text` / `--sidebar-text-dim` | `#d9e3df` / `#b9c7c2` | Teks / item biasa |
+| `--sidebar-muted` / `--sidebar-title` | `#8ea39c` / `#6f857e` | Chevron, judul grup, item nonaktif |
+| `--sidebar-hover` | `rgba(255,255,255,.06)` | Hover |
+| `--sidebar-active-bg` | `rgba(79,209,173,.12)` | Item aktif (teks putih, 600) |
+| `--sidebar-accent` | `#4fd1ad` | Fokus/aksen |
+| `--sidebar-brand` | `#2f9c84` | Kotak logo |
+
+Lebar 236px (collapsed 72px, mobile = drawer).
 
 ---
 
 ## Border Radius
 
-Small
+| Token | Nilai | Pakai |
+| ----- | ----- | ----- |
+| `--radius-sm` | 8px | Tombol, item nav, input kecil |
+| `--radius-md` | 12px | Kartu (default) |
+| `--radius-lg` | 16px | Panel besar |
 
-6px
-
-Medium
-
-10px
-
-Large
-
-14px
-
----
+Preset PrimeVue: sm 6px, md 8px, lg 10px, xl 14px (komponen bawaan).
 
 ## Shadow
 
-Small
+Tinta hijau gelap, ringan (mockup lebih mengandalkan border).
 
-0 1px 2px rgba(0,0,0,.08)
-
-Medium
-
-0 4px 12px rgba(0,0,0,.10)
-
-Large
-
-0 8px 24px rgba(0,0,0,.12)
-
----
-
-## Light Theme
-
-Background
-
-#FFFFFF
-
-Surface
-
-#F8FAFC
-
-Text
-
-#111827
+| Token | Nilai |
+| ----- | ----- |
+| `--shadow-sm` | `0 1px 2px rgba(20,35,31,.06)` |
+| `--shadow-md` | `0 4px 12px rgba(20,35,31,.08)` |
+| `--shadow-lg` | `0 8px 24px rgba(20,35,31,.12)` |
 
 ---
 
 ## Dark Theme
 
-Background
-
-#111827
-
-Surface
-
-#1F2937
-
-Text
-
-#F9FAFB
+Diaktifkan lewat class `.app-dark` pada `<html>` (`stores/theme.ts`). Varian gelap dari palet
+hijau: latar halaman `#0f1d1a`, kartu `#14231f`, border `#2a3d37`, teks `#e6efeb`.
+Primary diterangkan (`#3fa088`) agar terbaca; teks di atas tombol primary gelap (`#0f1d1a`).
+Skala `surface` PrimeVue di `main.ts` memakai nilai yang sama untuk kedua tema
+(950 = form field gelap, 900 = panel/overlay gelap).
 
 ---
 

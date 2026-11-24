@@ -30,7 +30,7 @@ import AppHeader from './AppHeader.vue'
   min-width: 0;
 }
 
-/* Content area padding 24px (docs/06) */
+/* Content area padding 24px (docs/06); latar halaman krem (--surface) */
 .layout__content {
   flex: 1;
   padding: var(--space-6);

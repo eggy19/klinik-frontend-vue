@@ -166,7 +166,7 @@ function lineTotal(line: CartLine): number {
 }
 
 .cart-line__warn {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .cart-line__error {
